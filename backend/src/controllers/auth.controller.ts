@@ -1,0 +1,64 @@
+import { RegisterUserDto, LoginUserDto } from "../dtos/user.dto";
+import { UserService } from "../services/user.service";
+import { Request, Response } from "express";
+import z from "zod";
+
+let userService = new UserService();
+
+export class AuthController {
+
+    async register(req: Request, res: Response) {
+        try {
+            const parsedData = RegisterUserDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const { token, user } = await userService.registerUser(parsedData.data);
+            return res.status(201).json({
+                success: true,
+                data: user,
+                token,
+                message: "User registered successfully"
+            });
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Internal Server Error"
+            });
+        }
+    }
+
+    async login(req: Request, res: Response) {
+        try {
+            const parsedData = LoginUserDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const { token, user } = await userService.loginUser(parsedData.data);
+            return res.status(200).json({
+                success: true,
+                data: user,
+                token,
+                message: "Login successful"
+            });
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Internal Server Error"
+            });
+        }
+    }
+
+    async logout(_req: Request, res: Response) {
+        return res.status(200).json({
+            success: true,
+            message: "Logged out successfully"
+        });
+    }
+}
