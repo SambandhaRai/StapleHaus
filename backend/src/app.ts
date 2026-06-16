@@ -1,8 +1,11 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application, NextFunction, Request, Response } from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors, { CorsOptions } from "cors";
+import multer from "multer";
+import path from "path";
 import { FRONTEND_URL } from "./config";
+import { allowedImageMessage } from "./middlewares/upload.middleware";
 
 dotenv.config();
 
@@ -41,6 +44,7 @@ const corsOptions: CorsOptions = {
 app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
@@ -53,6 +57,22 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api", orderRoutes);
 app.use("/api", reviewRoutes);
 app.use("/api", discountRoutes);
+
+app.use((error: Error, _req: Request, res: Response, next: NextFunction) => {
+    if (error instanceof multer.MulterError) {
+        const message = error.code === "LIMIT_FILE_SIZE"
+            ? "Image files must be 5 MB or smaller"
+            : error.message;
+
+        return res.status(400).json({ success: false, message });
+    }
+
+    if (error.message === allowedImageMessage) {
+        return res.status(400).json({ success: false, message: error.message });
+    }
+
+    next(error);
+});
 
 app.use((_req: Request, res: Response) => {
     res.status(404).json({ success: false, message: "Route not found" });

@@ -50,7 +50,7 @@ export class OrderService {
                 throw new HttpError(400, `A variant of "${product.name}" in your cart no longer exists`);
             }
             if (variant.stock < item.quantity) {
-                throw new HttpError(400, `"${product.name}" (${variant.size}/${variant.color}) only has ${variant.stock} left`);
+                throw new HttpError(400, `"${product.name}" (${variant.size}) only has ${variant.stock} left`);
             }
 
             const unitPrice = variant.priceOverride ?? product.basePrice;

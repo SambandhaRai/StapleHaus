@@ -4,8 +4,8 @@ export const GenderEnum = z.enum(["m", "f", "unisex"]);
 
 export const VariantSchema = z.object({
     size: z.string().trim().min(1, "Size is required"),
-    color: z.string().trim().min(1, "Color is required"),
-    sku: z.string().trim().min(1, "SKU is required"),
+    color: z.string().trim().min(1, "Color is required").optional(),
+    sku: z.string().trim().min(1, "SKU is required").optional(),
     stock: z.number().int().min(0).default(0),
     priceOverride: z.number().min(0).optional(),
 });

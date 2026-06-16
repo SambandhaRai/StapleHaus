@@ -12,6 +12,36 @@ let categoryRepository = new CategoryRepository();
 
 export class ProductService {
 
+    private getStoredImageName(image: string) {
+        const trimmed = image.trim();
+        const uploadMarker = "/uploads/";
+        const uploadIndex = trimmed.lastIndexOf(uploadMarker);
+        const value = uploadIndex >= 0
+            ? trimmed.slice(uploadIndex + uploadMarker.length)
+            : trimmed;
+
+        return value.split(/[\\/]/).pop() || value;
+    }
+
+    private normalizeImageNames(images: string[] = []) {
+        return images
+            .map((image) => this.getStoredImageName(image))
+            .filter(Boolean);
+    }
+
+    private normalizeVariants(
+        productSlug: string,
+        variants: CreateProductDto["variants"] | UpdateProductDto["variants"] = []
+    ) {
+        return variants.map((variant) => ({
+            size: variant.size,
+            color: variant.color || "default",
+            sku: variant.sku || `${productSlug}-${slugify(variant.size)}`,
+            stock: variant.stock,
+            priceOverride: variant.priceOverride,
+        }));
+    }
+
     private async assertBrandExists(brandId: string) {
         if (!mongoose.Types.ObjectId.isValid(brandId)) {
             throw new HttpError(400, "Invalid brand ID");
@@ -36,7 +66,7 @@ export class ProductService {
         const skus = variants.map(v => v.sku);
         const unique = new Set(skus);
         if (unique.size !== skus.length) {
-            throw new HttpError(400, "Variant SKUs must be unique within a product");
+            throw new HttpError(400, "Variant sizes must be unique within a product");
         }
     }
 
@@ -51,12 +81,14 @@ export class ProductService {
         throw error;
     }
 
-    async createProduct(data: CreateProductDto) {
+    async createProduct(data: CreateProductDto, uploadedImages: string[] = []) {
         await this.assertBrandExists(data.brand);
         await this.assertCategoryExists(data.category);
-        this.assertUniqueSkus(data.variants);
 
         const slug = slugify(data.slug || data.name);
+        const variants = this.normalizeVariants(slug, data.variants);
+        this.assertUniqueSkus(variants);
+
         const existing = await productRepository.getProductBySlug(slug);
         if (existing) {
             throw new HttpError(409, "A product with this slug already exists");
@@ -71,8 +103,8 @@ export class ProductService {
                 gender: data.gender,
                 category: data.category,
                 basePrice: data.basePrice,
-                images: data.images,
-                variants: data.variants,
+                images: this.normalizeImageNames([...data.images, ...uploadedImages]),
+                variants,
                 isActive: data.isActive,
             });
         } catch (error: any) {
@@ -110,17 +142,29 @@ export class ProductService {
         return product;
     }
 
-    async updateProduct(id: string, data: UpdateProductDto) {
+    async updateProduct(id: string, data: UpdateProductDto, uploadedImages: string[] = []) {
         if (!mongoose.Types.ObjectId.isValid(id)) {
             throw new HttpError(400, "Invalid product ID");
         }
 
         if (data.brand !== undefined) await this.assertBrandExists(data.brand);
         if (data.category !== undefined) await this.assertCategoryExists(data.category);
-        if (data.variants !== undefined) this.assertUniqueSkus(data.variants);
+
+        const currentProduct = data.variants !== undefined || data.slug !== undefined || data.name !== undefined
+            ? await productRepository.getProductById(id)
+            : null;
+        if ((data.variants !== undefined || data.slug !== undefined || data.name !== undefined) && !currentProduct) {
+            throw new HttpError(404, "Product not found");
+        }
+
+        let nextSlug = currentProduct?.slug || "";
 
         const updateData: Record<string, unknown> = { ...data };
         delete updateData.slug;
+
+        if (data.images !== undefined || uploadedImages.length > 0) {
+            updateData.images = this.normalizeImageNames([...(data.images || []), ...uploadedImages]);
+        }
 
         if (data.slug !== undefined || data.name !== undefined) {
             const slug = slugify(data.slug || data.name || "");
@@ -130,7 +174,14 @@ export class ProductService {
                     throw new HttpError(409, "A product with this slug already exists");
                 }
                 updateData.slug = slug;
+                nextSlug = slug;
             }
+        }
+
+        if (data.variants !== undefined) {
+            const variants = this.normalizeVariants(nextSlug, data.variants);
+            this.assertUniqueSkus(variants);
+            updateData.variants = variants;
         }
 
         try {

@@ -5,6 +5,27 @@ import z from "zod";
 
 let productService = new ProductService();
 
+function getProductBody(req: Request) {
+    if (!req.body?.payload) {
+        return { data: req.body };
+    }
+
+    if (typeof req.body.payload !== "string") {
+        return { error: "Invalid product payload" };
+    }
+
+    try {
+        return { data: JSON.parse(req.body.payload) };
+    } catch {
+        return { error: "Invalid product payload" };
+    }
+}
+
+function getUploadedImageNames(req: Request) {
+    const files = req.files as Express.Multer.File[] | undefined;
+    return (files || []).map((file) => file.filename);
+}
+
 export class ProductController {
 
     async getAllProducts(req: Request, res: Response) {
@@ -53,14 +74,22 @@ export class ProductController {
 
     async createProduct(req: Request, res: Response) {
         try {
-            const parsedData = CreateProductDto.safeParse(req.body);
+            const body = getProductBody(req);
+            if (body.error) {
+                return res.status(400).json({ success: false, message: body.error });
+            }
+
+            const parsedData = CreateProductDto.safeParse(body.data);
             if (!parsedData.success) {
                 return res.status(400).json({
                     success: false,
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const product = await productService.createProduct(parsedData.data);
+            const product = await productService.createProduct(
+                parsedData.data,
+                getUploadedImageNames(req)
+            );
             return res.status(201).json({
                 success: true,
                 data: product,
@@ -77,14 +106,23 @@ export class ProductController {
     async updateProduct(req: Request, res: Response) {
         try {
             const id = req.params.id as string;
-            const parsedData = UpdateProductDto.safeParse(req.body);
+            const body = getProductBody(req);
+            if (body.error) {
+                return res.status(400).json({ success: false, message: body.error });
+            }
+
+            const parsedData = UpdateProductDto.safeParse(body.data);
             if (!parsedData.success) {
                 return res.status(400).json({
                     success: false,
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const product = await productService.updateProduct(id, parsedData.data);
+            const product = await productService.updateProduct(
+                id,
+                parsedData.data,
+                getUploadedImageNames(req)
+            );
             return res.status(200).json({
                 success: true,
                 data: product,

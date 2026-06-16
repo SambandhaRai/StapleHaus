@@ -3,7 +3,7 @@ import { GenderType } from "../types/product.type";
 
 const VariantSchema: Schema = new Schema({
     size: { type: String, required: true, trim: true },
-    color: { type: String, required: true, trim: true },
+    color: { type: String, required: true, trim: true, default: "default" },
     sku: { type: String, required: true, trim: true },
     stock: { type: Number, required: true, min: 0, default: 0 },
     priceOverride: { type: Number, min: 0 },
