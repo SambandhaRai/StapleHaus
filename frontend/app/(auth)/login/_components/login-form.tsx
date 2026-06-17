@@ -9,6 +9,7 @@ import { toast } from "react-toastify";
 import { BackButton } from "@/app/_components/back-button";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
+import { PasswordField } from "../../_components/password-field";
 import { handleLogin } from "@/lib/actions/auth-action";
 
 const loginSchema = z.object({
@@ -79,9 +80,8 @@ export function LoginForm() {
                             Forgot password?
                         </Link>
                     </div>
-                    <Input
+                    <PasswordField
                         id="password"
-                        type="password"
                         placeholder="••••••••"
                         autoComplete="current-password"
                         error={errors.password?.message}

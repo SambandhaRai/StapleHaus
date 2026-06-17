@@ -1,21 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "react-toastify";
 import { BackButton } from "@/app/_components/back-button";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
+import { PasswordField } from "../../_components/password-field";
+import { PasswordStrength, passwordIsStrong } from "../../_components/password-strength";
 import { handleLogin, handleRegister } from "@/lib/actions/auth-action";
 
 const registerSchema = z
     .object({
         name: z.string().min(2, "Name must be at least 2 characters"),
         email: z.email("Enter a valid email"),
-        password: z.string().min(6, "Password must be at least 6 characters"),
+        password: z.string()
+            .max(128, "Password must be 128 characters or fewer")
+            .refine(passwordIsStrong, {
+                message: "Password does not meet the security requirements",
+            }),
         confirmPassword: z.string().min(1, "Please confirm your password"),
     })
     .refine((data) => data.password === data.confirmPassword, {
@@ -27,14 +34,19 @@ type RegisterValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
     const router = useRouter();
+    const [passwordHelpVisible, setPasswordHelpVisible] = useState(false);
 
     const {
         register,
         handleSubmit,
+        control,
         formState: { errors, isSubmitting },
     } = useForm<RegisterValues>({
         resolver: zodResolver(registerSchema),
     });
+    const password = useWatch({ control, name: "password" }) || "";
+    const passwordField = register("password");
+    const showPasswordStrength = passwordHelpVisible || password.length > 0;
 
     const onSubmit = async (values: RegisterValues) => {
         const res = await handleRegister({
@@ -102,18 +114,22 @@ export function RegisterForm() {
                     {...register("email")}
                 />
 
-                <Input
+                <PasswordField
                     label="Password"
-                    type="password"
-                    placeholder="At least 6 characters"
+                    placeholder="Create a strong password"
                     autoComplete="new-password"
                     error={errors.password?.message}
-                    {...register("password")}
+                    {...passwordField}
+                    onFocus={() => setPasswordHelpVisible(true)}
+                    onBlur={(event) => {
+                        passwordField.onBlur(event);
+                        setPasswordHelpVisible(false);
+                    }}
                 />
+                {showPasswordStrength ? <PasswordStrength password={password} /> : null}
 
-                <Input
+                <PasswordField
                     label="Confirm Password"
-                    type="password"
                     placeholder="Re-enter your password"
                     autoComplete="new-password"
                     error={errors.confirmPassword?.message}

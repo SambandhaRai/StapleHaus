@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const guestOnlyRoutes = ['/login', '/register'];
-const protectedRoutes = ['/account', '/checkout', '/orders'];
+const protectedRoutes = ['/account', '/cart', '/checkout', '/orders', '/wishlist'];
 const adminRoutes = ['/admin'];
 
 export function proxy(request: NextRequest) {
@@ -47,8 +47,10 @@ export const config = {
         "/login",
         "/register",
         "/account/:path*",
+        "/cart/:path*",
         "/checkout/:path*",
         "/orders/:path*",
+        "/wishlist/:path*",
         "/admin/:path*"
     ]
 }
