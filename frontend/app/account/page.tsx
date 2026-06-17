@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getUserData } from "@/lib/cookie";
+import { getAuthToken, getUserData } from "@/lib/cookie";
 import { LogoutButton } from "@/app/_components/logout-button";
 
 export default async function AccountPage() {
-    const user = await getUserData();
+    const [authToken, user] = await Promise.all([
+        getAuthToken(),
+        getUserData(),
+    ]);
 
-    if (!user) {
+    if (!authToken || !user) {
         redirect("/login");
     }
 
