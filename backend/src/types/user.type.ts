@@ -16,7 +16,14 @@ export const AddressSchema = z.object({
 export const BaseUserSchema = z.object({
     name: z.string().trim().min(2, "Name must be at least 2 characters"),
     email: z.email("Invalid email address"),
-    password: z.string().trim().min(6, "Password must be at least 6 characters"),
+    password: z.string()
+        .trim()
+        .min(8, "Password must be at least 8 characters")
+        .max(128, "Password must be 128 characters or fewer")
+        .regex(/[a-z]/, "Password must include a lowercase letter")
+        .regex(/[A-Z]/, "Password must include an uppercase letter")
+        .regex(/\d/, "Password must include a number")
+        .regex(/[^A-Za-z0-9]/, "Password must include a symbol"),
     role: UserRoleEnum.default("customer"),
     addresses: z.array(AddressSchema).default([]),
 });

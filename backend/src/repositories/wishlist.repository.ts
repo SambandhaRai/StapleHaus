@@ -15,10 +15,11 @@ export class WishlistRepository implements IWishlistRepository {
     }
 
     async getPopulatedByUserId(userId: string): Promise<IWishlist | null> {
-        return await WishlistModel.findOne({ userId }).populate(
-            "productIds",
-            "name slug images basePrice avgRating"
-        );
+        return await WishlistModel.findOne({ userId }).populate({
+            path: "productIds",
+            select: "name slug images basePrice avgRating reviewCount gender brand",
+            populate: { path: "brand", select: "name slug" },
+        });
     }
 
     async createWishlist(userId: string): Promise<IWishlist> {

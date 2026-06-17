@@ -46,8 +46,16 @@ export class ProductRepository implements IProductRepository {
         const filter: Record<string, any> = { isActive: true };
         if (gender) filter.gender = gender;
         if (category) filter.category = category;
-        if (brand) filter.brand = brand;
-        if (size) filter["variants.size"] = size;
+        if (brand) {
+            const brandIds = brand.split(",").map((b) => b.trim()).filter(Boolean);
+            if (brandIds.length > 1) filter.brand = { $in: brandIds };
+            else if (brandIds.length === 1) filter.brand = brandIds[0];
+        }
+        if (size) {
+            const sizes = size.split(",").map((s) => s.trim()).filter(Boolean);
+            if (sizes.length > 1) filter["variants.size"] = { $in: sizes };
+            else if (sizes.length === 1) filter["variants.size"] = sizes[0];
+        }
         if (color) filter["variants.color"] = color;
         if (minPrice !== undefined || maxPrice !== undefined) {
             filter.basePrice = {};

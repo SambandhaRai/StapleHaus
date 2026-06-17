@@ -19,10 +19,14 @@ export class CartRepository implements ICartRepository {
     }
 
     async getPopulatedByUserId(userId: string): Promise<ICart | null> {
-        return await CartModel.findOne({ userId }).populate(
-            "items.productId",
-            "name slug images basePrice variants"
-        );
+        return await CartModel.findOne({ userId }).populate({
+            path: "items.productId",
+            select: "name slug images basePrice variants brand gender",
+            populate: {
+                path: "brand",
+                select: "name slug",
+            },
+        });
     }
 
     async createCart(userId: string): Promise<ICart> {
