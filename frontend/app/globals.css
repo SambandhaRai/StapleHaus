@@ -180,4 +180,62 @@
   .link-underline:hover {
     background-size: 100% 1px;
   }
+
+  .range-dual {
+    position: relative;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+  }
+  .range-dual .range-track {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--color-neutral-300);
+  }
+  .range-dual .range-fill {
+    position: absolute;
+    height: 2px;
+    background-color: var(--color-ink);
+  }
+  .range-dual .range-thumb {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    margin: 0;
+    background: transparent;
+    pointer-events: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .range-dual .range-thumb:focus-visible {
+    outline: none;
+  }
+  .range-dual .range-thumb::-webkit-slider-thumb {
+    pointer-events: auto;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 9999px;
+    background-color: var(--color-paper);
+    border: 1.5px solid var(--color-ink);
+    cursor: pointer;
+  }
+  .range-dual .range-thumb::-moz-range-thumb {
+    pointer-events: auto;
+    height: 16px;
+    width: 16px;
+    border-radius: 9999px;
+    background-color: var(--color-paper);
+    border: 1.5px solid var(--color-ink);
+    cursor: pointer;
+  }
+  .range-dual .range-thumb::-webkit-slider-runnable-track {
+    background: transparent;
+  }
+  .range-dual .range-thumb::-moz-range-track {
+    background: transparent;
+  }
 }
