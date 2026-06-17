@@ -1,11 +1,13 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Star } from "lucide-react";
 import { getUploadUrl } from "@/lib/uploads";
 
 interface ProductCardProduct {
     name: string;
     slug: string;
-    brand?: { name?: string } | string | null;
+    brand?: { name?: string; slug?: string } | string | null;
+    gender?: "m" | "f" | "unisex";
     images?: string[];
     basePrice: number;
     avgRating?: number;
@@ -19,19 +21,27 @@ interface ProductCardProps {
 const money = (n: number) => `$${n.toFixed(2)}`;
 
 export function ProductCard({ product }: ProductCardProps) {
-    const brandName =
-        product.brand && typeof product.brand === "object" ? product.brand.name : undefined;
+    const brandObj =
+        product.brand && typeof product.brand === "object" ? product.brand : undefined;
+    const brandName = brandObj?.name;
     const image = getUploadUrl(product.images?.[0]);
     const roundedRating = Math.round(product.avgRating || 0);
 
+    const genderSegment = product.gender === "f" ? "women" : "men";
+    const href = brandObj?.slug
+        ? `/${genderSegment}/brands/${brandObj.slug}/${product.slug}`
+        : `/${genderSegment}/brands/unknown/${product.slug}`;
+
     return (
-        <Link href={`/products/${product.slug}`} className="group block">
+        <Link href={href} className="group block">
             <div className="relative mb-3 aspect-[3/4] overflow-hidden bg-neutral-100">
                 {image ? (
-                    <img
+                    <Image
                         src={image}
                         alt={product.name}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        fill
+                        sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                 ) : (
                     <div className="flex h-full w-full items-center justify-center">

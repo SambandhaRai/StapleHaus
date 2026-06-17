@@ -12,6 +12,12 @@ interface AccountMenuProps {
     accountHref: string;
 }
 
+const accountLinks = [
+    { href: "/orders", label: "Orders" },
+    { href: "/account/addresses", label: "Address Book" },
+    { href: "/wishlist", label: "Wishlist" },
+];
+
 export function AccountMenu({ userName, accountHref }: AccountMenuProps) {
     const router = useRouter();
     const [loggingOut, setLoggingOut] = useState(false);
@@ -44,15 +50,15 @@ export function AccountMenu({ userName, accountHref }: AccountMenuProps) {
                                 <Link href={accountHref} className="py-2 text-sm transition hover:text-muted">
                                     Profile
                                 </Link>
-                                <Link href="/orders" className="py-2 text-sm transition hover:text-muted">
-                                    Orders
-                                </Link>
-                                <Link href="/account/addresses" className="py-2 text-sm transition hover:text-muted">
-                                    Address Book
-                                </Link>
-                                <Link href="/wishlist" className="py-2 text-sm transition hover:text-muted">
-                                    Wishlist
-                                </Link>
+                                {accountLinks.map((link) => (
+                                    <Link
+                                        key={link.href}
+                                        href={link.href}
+                                        className="py-2 text-sm transition hover:text-muted"
+                                    >
+                                        {link.label}
+                                    </Link>
+                                ))}
                                 <button
                                     type="button"
                                     onClick={onLogout}

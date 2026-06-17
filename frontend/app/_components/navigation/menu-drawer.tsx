@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { LogoutButton } from "./logout-button";
+import { LogoutButton } from "../logout-button";
 
 interface MenuDrawerProps {
     userName?: string | null;
@@ -24,7 +24,10 @@ export function MenuDrawer({ userName, accountHref }: MenuDrawerProps) {
     const [open, setOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
 
-    useEffect(() => setMounted(true), []);
+    useEffect(() => {
+        const timeoutId = window.setTimeout(() => setMounted(true), 0);
+        return () => window.clearTimeout(timeoutId);
+    }, []);
 
     useEffect(() => {
         document.body.style.overflow = open ? "hidden" : "";

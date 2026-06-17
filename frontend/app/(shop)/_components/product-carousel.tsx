@@ -31,7 +31,7 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
         <div className="group/carousel relative">
             <div
                 ref={scrollRef}
-                className="flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
             >
                 {products.map((product) => (
                     <div

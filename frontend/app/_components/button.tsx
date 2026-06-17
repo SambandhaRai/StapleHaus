@@ -1,7 +1,6 @@
 "use client";
 
 import { ButtonHTMLAttributes, forwardRef } from "react";
-import { Spinner } from "./spinner";
 
 type ButtonVariant = "primary" | "secondary" | "ghost";
 type ButtonSize = "sm" | "md" | "lg";
@@ -25,6 +24,22 @@ const sizeClasses: Record<ButtonSize, string> = {
     lg: "px-8 py-4 text-sm",
 };
 
+function ButtonSpinner({ size = 14 }: { size?: number }) {
+    return (
+        <svg
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            className="animate-spin"
+            aria-hidden="true"
+        >
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" opacity="0.25" />
+            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+        </svg>
+    );
+}
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     (
         {
@@ -46,7 +61,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
                 className={`label-caps inline-flex items-center justify-center gap-2 transition disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${fullWidth ? "w-full" : ""} ${className}`}
                 {...props}
             >
-                {isLoading && <Spinner size={14} />}
+                {isLoading && <ButtonSpinner />}
                 {children}
             </button>
         );
