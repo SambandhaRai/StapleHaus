@@ -1,4 +1,4 @@
-import rateLimit, { Options } from "express-rate-limit";
+import rateLimit, { Options, ipKeyGenerator } from "express-rate-limit";
 import { Request, Response } from "express";
 
 const tooManyHandler = (_req: Request, res: Response) => {
@@ -10,7 +10,8 @@ const tooManyHandler = (_req: Request, res: Response) => {
 
 const byEmail = (req: Request) => {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
-    return email || req.ip || "unknown";
+    if (email) return email;
+    return req.ip ? ipKeyGenerator(req.ip) : "unknown";
 };
 
 const baseOptions: Partial<Options> = {

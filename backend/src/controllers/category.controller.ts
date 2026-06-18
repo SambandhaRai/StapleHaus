@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { CreateCategoryDto, UpdateCategoryDto } from "../dtos/category.dto";
 import { CategoryService } from "../services/category.service";
 import { Request, Response } from "express";
@@ -16,10 +17,7 @@ export class CategoryController {
                 message: "Categories fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -39,10 +37,7 @@ export class CategoryController {
                 message: "Category created successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -63,10 +58,7 @@ export class CategoryController {
                 message: "Category updated successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -79,10 +71,7 @@ export class CategoryController {
                 message: "Category deleted successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { AddWishlistItemDto } from "../dtos/wishlist.dto";
 import { WishlistService } from "../services/wishlist.service";
 import { Request, Response } from "express";
@@ -20,10 +21,7 @@ export class WishlistController {
                 message: "Wishlist fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -47,10 +45,7 @@ export class WishlistController {
                 message: "Product added to wishlist"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -68,10 +63,7 @@ export class WishlistController {
                 message: "Product removed from wishlist"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

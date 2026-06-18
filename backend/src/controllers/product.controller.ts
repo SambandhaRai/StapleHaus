@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { CreateProductDto, UpdateProductDto, ProductQueryDto } from "../dtos/product.dto";
 import { ProductService } from "../services/product.service";
 import { Request, Response } from "express";
@@ -48,10 +49,7 @@ export class ProductController {
                 message: "Products fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -65,10 +63,7 @@ export class ProductController {
                 message: "Product fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -96,10 +91,7 @@ export class ProductController {
                 message: "Product created successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -129,10 +121,7 @@ export class ProductController {
                 message: "Product updated successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -145,10 +134,7 @@ export class ProductController {
                 message: "Product deleted successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

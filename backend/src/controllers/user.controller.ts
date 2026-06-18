@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { UpdateUserDto, CreateAddressDto, UpdateAddressDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { Request, Response } from "express";
@@ -20,10 +21,7 @@ export class UserController {
                 message: "Profile fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -47,10 +45,7 @@ export class UserController {
                 message: "Profile updated successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -74,10 +69,7 @@ export class UserController {
                 message: "Address added successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -102,10 +94,7 @@ export class UserController {
                 message: "Address updated successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -123,10 +112,7 @@ export class UserController {
                 message: "Address removed successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

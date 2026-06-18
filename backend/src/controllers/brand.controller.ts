@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { CreateBrandDto, UpdateBrandDto } from "../dtos/brand.dto";
 import { BrandService } from "../services/brand.service";
 import { Request, Response } from "express";
@@ -16,10 +17,7 @@ export class BrandController {
                 message: "Brands fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -39,10 +37,7 @@ export class BrandController {
                 message: "Brand created successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -63,10 +58,7 @@ export class BrandController {
                 message: "Brand updated successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -79,10 +71,7 @@ export class BrandController {
                 message: "Brand deleted successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

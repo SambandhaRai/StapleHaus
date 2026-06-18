@@ -2,6 +2,7 @@ import express, { Application, NextFunction, Request, Response } from "express";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import cors, { CorsOptions } from "cors";
+import helmet from "helmet";
 import multer from "multer";
 import path from "path";
 import { FRONTEND_URL } from "./config";
@@ -24,6 +25,8 @@ const app: Application = express();
 
 app.set("query parser", "simple");
 
+app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+
 const allowedOrigins = [
     FRONTEND_URL,
     "http://localhost:3000",
@@ -41,7 +44,6 @@ const corsOptions: CorsOptions = {
     },
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
 };
 app.use(cors(corsOptions));
 

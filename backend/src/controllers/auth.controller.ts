@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { Request, Response } from "express";
@@ -23,10 +24,7 @@ export class AuthController {
                 message: "Verification code sent to your email"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -47,10 +45,7 @@ export class AuthController {
                 message: "Login successful"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -71,10 +66,7 @@ export class AuthController {
                 message: "Email verified successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -93,10 +85,7 @@ export class AuthController {
                 message: "A new verification code has been sent"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -123,10 +112,7 @@ export class AuthController {
                 message: "Login successful"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 

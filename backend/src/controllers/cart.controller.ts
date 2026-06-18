@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { AddCartItemDto, UpdateCartItemDto } from "../dtos/cart.dto";
 import { CartService } from "../services/cart.service";
 import { Request, Response } from "express";
@@ -20,10 +21,7 @@ export class CartController {
                 message: "Cart fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -47,10 +45,7 @@ export class CartController {
                 message: "Item added to cart"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -75,10 +70,7 @@ export class CartController {
                 message: "Cart item updated"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -96,10 +88,7 @@ export class CartController {
                 message: "Item removed from cart"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { CreateDiscountDto, UpdateDiscountDto, ValidateDiscountDto } from "../dtos/discount.dto";
 import { DiscountService } from "../services/discount.service";
 import { Request, Response } from "express";
@@ -22,10 +23,7 @@ export class DiscountController {
                 message: "Discount is valid"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -38,10 +36,7 @@ export class DiscountController {
                 message: "Discounts fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -61,10 +56,7 @@ export class DiscountController {
                 message: "Discount created successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -85,10 +77,7 @@ export class DiscountController {
                 message: "Discount updated successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -101,10 +90,7 @@ export class DiscountController {
                 message: "Discount deleted successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }

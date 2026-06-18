@@ -1,3 +1,4 @@
+import { handleControllerError } from "../errors/handle-controller-error";
 import { CreateReviewDto } from "../dtos/review.dto";
 import { ReviewService } from "../services/review.service";
 import { Request, Response } from "express";
@@ -17,10 +18,7 @@ export class ReviewController {
                 message: "Reviews fetched successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -45,10 +43,7 @@ export class ReviewController {
                 message: "Review submitted successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 
@@ -66,10 +61,7 @@ export class ReviewController {
                 message: "Review deleted successfully"
             });
         } catch (error: Error | any) {
-            return res.status(error.statusCode || 500).json({
-                success: false,
-                message: error.message || "Internal Server Error"
-            });
+            return handleControllerError(res, error);
         }
     }
 }
