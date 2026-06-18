@@ -13,7 +13,7 @@ import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { PasswordStrength, passwordIsStrong } from "../../_components/password-strength";
 import { GoogleSignInButton } from "../../_components/google-sign-in-button";
-import { handleLogin, handleRegister } from "@/lib/actions/auth-action";
+import { handleRegister } from "@/lib/actions/auth-action";
 
 const registerSchema = z
     .object({
@@ -61,19 +61,8 @@ export function RegisterForm() {
             return;
         }
 
-        const loginRes = await handleLogin({
-            email: values.email,
-            password: values.password,
-        });
-
-        if (loginRes.success) {
-            toast.success("Account created — welcome!");
-            router.push("/");
-        } else {
-            toast.info("Account created. Please sign in.");
-            router.push("/login");
-        }
-        router.refresh();
+        toast.success("We sent a verification code to your email");
+        router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
     };
 
     return (
