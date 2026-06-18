@@ -147,7 +147,7 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
     };
 
     return (
-        <main className="mx-auto w-full max-w-[82rem] px-6 py-10 lg:px-10 lg:py-14">
+        <main className="mx-auto w-full max-w-328 px-6 py-10 lg:px-10 lg:py-14">
             <div className="mb-10 flex justify-center">
                 <div className="grid w-full max-w-xs grid-cols-2 items-center text-center text-sm">
                     <div>
