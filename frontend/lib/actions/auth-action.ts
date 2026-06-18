@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { loginUser, registerUser, googleLogin, logoutUser } from "../api/auth";
+import { loginUser, registerUser, verifyOtp, resendOtp, googleLogin, logoutUser } from "../api/auth";
 import {
     setAuthToken,
     setUserData,
@@ -30,6 +30,46 @@ export const handleRegister = async (formData: any) => {
         return {
             success: false,
             message: err.message || "Registration Failed"
+        };
+    }
+}
+
+export const handleVerifyOtp = async (email: string, otp: string) => {
+    try {
+        const result = await verifyOtp(email, otp);
+        if (result.success) {
+            await setAuthToken(result.token);
+            await setUserData(result.data);
+
+            return {
+                success: true,
+                data: result.data,
+                message: "Email Verified"
+            };
+        }
+        return {
+            success: false,
+            message: result.message || "Verification Failed"
+        };
+    } catch (err: Error | any) {
+        return {
+            success: false,
+            message: err.message || "Verification Failed"
+        };
+    }
+}
+
+export const handleResendOtp = async (email: string) => {
+    try {
+        const result = await resendOtp(email);
+        return {
+            success: Boolean(result.success),
+            message: result.message || "A new code has been sent"
+        };
+    } catch (err: Error | any) {
+        return {
+            success: false,
+            message: err.message || "Could not resend code"
         };
     }
 }

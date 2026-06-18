@@ -34,6 +34,38 @@ export const loginUser = async (loginData: any) => {
     }
 }
 
+export const verifyOtp = async (email: string, otp: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.VERIFY_OTP,
+            { email, otp }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Verification Failed"
+        );
+    }
+}
+
+export const resendOtp = async (email: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.RESEND_OTP,
+            { email }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Could not resend code"
+        );
+    }
+}
+
 export const googleLogin = async (credential: string, nonce: string) => {
     try {
         const response = await axios.post(
