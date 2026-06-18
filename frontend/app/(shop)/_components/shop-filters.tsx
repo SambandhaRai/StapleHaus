@@ -11,9 +11,6 @@ interface FilterRecord {
 }
 
 interface ShopFiltersProps {
-    landingPath: string;
-    categorySlug?: string;
-    categories: FilterRecord[];
     brands: FilterRecord[];
     activeBrands: string[];
     activeSizes: string[];
@@ -21,12 +18,12 @@ interface ShopFiltersProps {
     priceMax: number;
     minPrice?: number;
     maxPrice?: number;
+    landingPath?: string;
+    categorySlug?: string;
+    categories?: FilterRecord[];
 }
 
 export function ShopFilters({
-    landingPath,
-    categorySlug,
-    categories,
     brands,
     activeBrands,
     activeSizes,
@@ -34,56 +31,86 @@ export function ShopFilters({
     priceMax,
     minPrice,
     maxPrice,
+    landingPath,
+    categorySlug,
+    categories,
 }: ShopFiltersProps) {
-    return (
-        <div className="lg:sticky lg:top-24">
-            <FilterSection title="Categories">
-                <ul className="space-y-2">
-                    <li>
-                        <Link
-                            href={`${landingPath}/shop`}
-                            className={`body-sm link-underline ${categorySlug ? "text-muted" : "text-ink"}`}
-                        >
-                            All
-                        </Link>
-                    </li>
-                    {categories.map((category) => (
-                        <li key={category._id}>
+    const sections: { id: string; node: React.ReactNode }[] = [];
+
+    if (landingPath && categories && categories.length > 0) {
+        sections.push({
+            id: "categories",
+            node: (
+                <FilterSection title="Categories">
+                    <ul className="space-y-2">
+                        <li>
                             <Link
-                                href={`${landingPath}/categories/${category.slug}`}
-                                className={`body-sm link-underline ${categorySlug === category.slug ? "text-ink" : "text-muted"}`}
+                                href={`${landingPath}/shop`}
+                                className={`body-sm link-underline ${categorySlug ? "text-muted" : "text-ink"}`}
                             >
-                                {category.name}
+                                All
                             </Link>
                         </li>
-                    ))}
-                </ul>
+                        {categories.map((category) => (
+                            <li key={category._id}>
+                                <Link
+                                    href={`${landingPath}/categories/${category.slug}`}
+                                    className={`body-sm link-underline ${categorySlug === category.slug ? "text-ink" : "text-muted"}`}
+                                >
+                                    {category.name}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </FilterSection>
+            ),
+        });
+    }
+
+    sections.push({
+        id: "brand",
+        node: (
+            <FilterSection title="Brand">
+                <ShopBrandFilter brands={brands} activeBrands={activeBrands} />
             </FilterSection>
+        ),
+    });
 
-            <div className="mt-6 border-t border-border pt-6">
-                <FilterSection title="Brand">
-                    <ShopBrandFilter brands={brands} activeBrands={activeBrands} />
+    sections.push({
+        id: "size",
+        node: (
+            <FilterSection title="Size">
+                <ShopSizeFilter activeSizes={activeSizes} />
+            </FilterSection>
+        ),
+    });
+
+    if (priceMax > priceMin) {
+        sections.push({
+            id: "price",
+            node: (
+                <FilterSection title="Price">
+                    <ShopPriceFilter
+                        minBound={priceMin}
+                        maxBound={priceMax}
+                        initialMin={minPrice ?? priceMin}
+                        initialMax={maxPrice ?? priceMax}
+                    />
                 </FilterSection>
-            </div>
+            ),
+        });
+    }
 
-            <div className="mt-6 border-t border-border pt-6">
-                <FilterSection title="Size">
-                    <ShopSizeFilter activeSizes={activeSizes} />
-                </FilterSection>
-            </div>
-
-            {priceMax > priceMin ? (
-                <div className="mt-6 border-t border-border pt-6">
-                    <FilterSection title="Price">
-                        <ShopPriceFilter
-                            minBound={priceMin}
-                            maxBound={priceMax}
-                            initialMin={minPrice ?? priceMin}
-                            initialMax={maxPrice ?? priceMax}
-                        />
-                    </FilterSection>
+    return (
+        <div className="lg:sticky lg:top-24">
+            {sections.map((section, index) => (
+                <div
+                    key={section.id}
+                    className={index === 0 ? "" : "mt-6 border-t border-border pt-6"}
+                >
+                    {section.node}
                 </div>
-            ) : null}
+            ))}
         </div>
     );
 }

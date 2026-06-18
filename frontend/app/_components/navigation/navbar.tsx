@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { getAuthToken, getUserData } from "@/lib/cookie";
 import { handleGetCategories } from "@/lib/actions/categories-action";
 import { MenuDrawer } from "./menu-drawer";
 import { AccountMenu } from "./account-menu";
 import { NavMenu } from "./nav-menu";
 import { CartBadge } from "./cart-badge";
+import { SearchBar } from "./search-bar";
 
 interface CategoryRecord {
     _id: string;
@@ -90,13 +90,7 @@ export async function Navbar() {
                 </Link>
 
                 <div className="flex items-center gap-5">
-                    <button
-                        type="button"
-                        aria-label="Search"
-                        className="flex items-center justify-center text-ink transition hover:opacity-70"
-                    >
-                        <Search size={20} strokeWidth={1.5} />
-                    </button>
+                    <SearchBar />
                     <AccountMenu userName={activeUser?.name ?? null} accountHref={accountHref} />
                     <CartBadge />
                 </div>
