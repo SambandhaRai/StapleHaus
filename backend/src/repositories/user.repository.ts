@@ -4,19 +4,23 @@ import { AddressType, UserRoleType } from "../types/user.type";
 type CreateUserData = {
     name: string;
     email: string;
-    passwordHash: string;
+    password?: string;
+    googleId?: string;
     role?: UserRoleType;
 };
 
 type UpdateUserData = {
     name?: string;
+    googleId?: string;
 };
 
 export interface IUserRepository {
     createUser(data: CreateUserData): Promise<IUser>;
     getUserById(id: string): Promise<IUser | null>;
     getUserByEmail(email: string): Promise<IUser | null>;
+    getUserByGoogleId(googleId: string): Promise<IUser | null>;
     updateOneUser(id: string, data: UpdateUserData): Promise<IUser | null>;
+    linkGoogleAccount(userId: string, googleId: string): Promise<IUser | null>;
 
     addAddress(userId: string, address: AddressType): Promise<IUser | null>;
     updateAddress(userId: string, addressId: string, patch: Partial<AddressType>): Promise<IUser | null>;
@@ -37,8 +41,20 @@ export class UserRepository implements IUserRepository {
         return await UserModel.findOne({ email });
     }
 
+    async getUserByGoogleId(googleId: string): Promise<IUser | null> {
+        return await UserModel.findOne({ googleId });
+    }
+
     async updateOneUser(id: string, data: UpdateUserData): Promise<IUser | null> {
         return await UserModel.findByIdAndUpdate(id, data, { returnDocument: "after" });
+    }
+
+    async linkGoogleAccount(userId: string, googleId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { googleId },
+            { returnDocument: "after" }
+        );
     }
 
     async addAddress(userId: string, address: AddressType): Promise<IUser | null> {

@@ -15,7 +15,8 @@ export const AddressSchema: Schema = new Schema({
 const UserSchema: Schema = new Schema({
     name: { type: String, required: true, trim: true, minLength: 2 },
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
-    passwordHash: { type: String, required: true },
+    password: { type: String },
+    googleId: { type: String, trim: true, unique: true, sparse: true },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     addresses: { type: [AddressSchema], default: [] },
 }, { timestamps: true });
@@ -23,7 +24,7 @@ const UserSchema: Schema = new Schema({
 UserSchema.set("toJSON", {
     transform: (_doc, ret) => {
         const serialized = ret as Record<string, unknown>;
-        delete serialized.passwordHash;
+        delete serialized.password;
         delete serialized.__v;
         return ret;
     },
@@ -37,7 +38,8 @@ export interface IUser extends Document {
     _id: mongoose.Types.ObjectId;
     name: string;
     email: string;
-    passwordHash: string;
+    password?: string;
+    googleId?: string;
     role: UserRoleType;
     addresses: IAddress[];
     createdAt: Date;

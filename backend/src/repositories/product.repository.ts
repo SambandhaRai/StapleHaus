@@ -1,4 +1,5 @@
 import { ProductModel, IProduct } from "../models/product.model";
+import { BrandModel } from "../models/brand.model";
 import { ProductQueryDto } from "../dtos/product.dto";
 import { GenderType } from "../types/product.type";
 
@@ -62,7 +63,16 @@ export class ProductRepository implements IProductRepository {
             if (minPrice !== undefined) filter.basePrice.$gte = minPrice;
             if (maxPrice !== undefined) filter.basePrice.$lte = maxPrice;
         }
-        if (q) filter.$text = { $search: q };
+        if (q) {
+            const term = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const regex = new RegExp(term, "i");
+            const matchingBrands = await BrandModel.find({ name: regex }).select("_id");
+            const matchingBrandIds = matchingBrands.map((b) => b._id);
+            filter.$or = [
+                { name: regex },
+                ...(matchingBrandIds.length > 0 ? [{ brand: { $in: matchingBrandIds } }] : []),
+            ];
+        }
 
         let sortObj: Record<string, 1 | -1> = { createdAt: -1 };
         if (sort === "price_asc") sortObj = { basePrice: 1 };

@@ -55,6 +55,36 @@ export class AuthController {
         }
     }
 
+    async googleLogin(req: Request, res: Response) {
+        try {
+            const { credential, nonce } = req.body;
+            if (!credential || typeof credential !== "string") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing Google credential"
+                });
+            }
+            if (!nonce || typeof nonce !== "string") {
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing Google sign-in nonce"
+                });
+            }
+            const { token, user } = await userService.loginWithGoogle(credential, nonce);
+            return res.status(200).json({
+                success: true,
+                data: user,
+                token,
+                message: "Login successful"
+            });
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Internal Server Error"
+            });
+        }
+    }
+
     async logout(_req: Request, res: Response) {
         return res.status(200).json({
             success: true,

@@ -1,13 +1,15 @@
 import { UserRepository } from "../repositories/user.repository";
 import { IUser } from "../models/user.model";
 import { HttpError } from "../errors/http-error";
-import { JWT_SECRET, JWT_EXPIRES_IN } from "../config";
+import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID } from "../config";
 import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto } from "../dtos/user.dto";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
 
 let userRepository = new UserRepository();
+let googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 export class UserService {
 
@@ -27,12 +29,12 @@ export class UserService {
             throw new HttpError(409, "Email is already in use");
         }
 
-        const passwordHash = await bcryptjs.hash(data.password, 10);
+        const password = await bcryptjs.hash(data.password, 10);
 
         const newUser = await userRepository.createUser({
             name: data.name,
             email: data.email,
-            passwordHash,
+            password,
         });
 
         const token = this.createAuthToken(newUser);
@@ -42,11 +44,11 @@ export class UserService {
 
     async loginUser(data: LoginUserDto) {
         const existingUser = await userRepository.getUserByEmail(data.email);
-        if (!existingUser) {
+        if (!existingUser || !existingUser.password) {
             throw new HttpError(401, "Invalid email or password");
         }
 
-        const isPasswordMatch = await bcryptjs.compare(data.password, existingUser.passwordHash);
+        const isPasswordMatch = await bcryptjs.compare(data.password, existingUser.password);
         if (!isPasswordMatch) {
             throw new HttpError(401, "Invalid email or password");
         }
@@ -54,6 +56,73 @@ export class UserService {
         const token = this.createAuthToken(existingUser);
 
         return { token, user: existingUser };
+    }
+
+    private async verifyGoogleToken(idToken: string, expectedNonce: string) {
+        if (!GOOGLE_CLIENT_ID) {
+            throw new HttpError(500, "Google sign-in is not configured");
+        }
+
+        let payload;
+        try {
+            const ticket = await googleClient.verifyIdToken({
+                idToken,
+                audience: GOOGLE_CLIENT_ID,
+            });
+            payload = ticket.getPayload();
+        } catch {
+            throw new HttpError(401, "Invalid Google credential");
+        }
+
+        if (!payload || !payload.email || !payload.sub) {
+            throw new HttpError(401, "Invalid Google credential");
+        }
+        if (!payload.email_verified) {
+            throw new HttpError(401, "Google email is not verified");
+        }
+        if (!expectedNonce || payload.nonce !== expectedNonce) {
+            throw new HttpError(401, "Google sign-in could not be verified, please try again");
+        }
+
+        return { email: payload.email, name: payload.name, googleId: payload.sub };
+    }
+
+    async loginWithGoogle(idToken: string, expectedNonce: string) {
+        const profile = await this.verifyGoogleToken(idToken, expectedNonce);
+
+        let user = await userRepository.getUserByGoogleId(profile.googleId);
+        if (!user) {
+            user = await userRepository.getUserByEmail(profile.email);
+            if (user) {
+                if (user.googleId && user.googleId !== profile.googleId) {
+                    throw new HttpError(409, "This email is already linked to another Google account");
+                }
+
+                user = await userRepository.linkGoogleAccount(user._id.toString(), profile.googleId);
+            } else {
+                try {
+                    user = await userRepository.createUser({
+                        name: profile.name || profile.email.split("@")[0],
+                        email: profile.email,
+                        googleId: profile.googleId,
+                    });
+                } catch (error: any) {
+                    if (error?.code !== 11000) {
+                        throw error;
+                    }
+                    user = await userRepository.getUserByGoogleId(profile.googleId)
+                        ?? await userRepository.getUserByEmail(profile.email);
+                }
+            }
+        }
+
+        if (!user) {
+            throw new HttpError(500, "Unable to sign in with Google");
+        }
+
+        const token = this.createAuthToken(user);
+
+        return { token, user };
     }
 
     async getUserById(userId: string) {

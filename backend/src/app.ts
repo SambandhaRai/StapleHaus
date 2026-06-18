@@ -22,6 +22,8 @@ import discountRoutes from "./routes/discount.routes";
 
 const app: Application = express();
 
+app.set("query parser", "simple");
+
 const allowedOrigins = [
     FRONTEND_URL,
     "http://localhost:3000",
