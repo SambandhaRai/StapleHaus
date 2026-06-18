@@ -12,6 +12,7 @@ import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { PasswordStrength, passwordIsStrong } from "../../_components/password-strength";
+import { GoogleSignInButton } from "../../_components/google-sign-in-button";
 import { handleLogin, handleRegister } from "@/lib/actions/auth-action";
 
 const registerSchema = z
@@ -140,6 +141,10 @@ export function RegisterForm() {
                     Create Account
                 </Button>
             </form>
+
+            <div className="mt-6">
+                <GoogleSignInButton />
+            </div>
 
             <p className="mt-8 text-xs leading-relaxed text-subtle">
                 By creating an account, you agree to our{" "}

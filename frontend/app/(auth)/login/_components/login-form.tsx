@@ -10,6 +10,7 @@ import { BackButton } from "@/app/_components/back-button";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
+import { GoogleSignInButton } from "../../_components/google-sign-in-button";
 import { handleLogin } from "@/lib/actions/auth-action";
 
 const loginSchema = z.object({
@@ -93,6 +94,10 @@ export function LoginForm() {
                     Sign In
                 </Button>
             </form>
+
+            <div className="mt-6">
+                <GoogleSignInButton />
+            </div>
 
             <p className="mt-8 text-xs leading-relaxed text-subtle">
                 By signing in, you agree to our{" "}
