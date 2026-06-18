@@ -17,6 +17,9 @@ const UserSchema: Schema = new Schema({
     email: { type: String, required: true, unique: true, trim: true, lowercase: true },
     password: { type: String },
     googleId: { type: String, trim: true, unique: true, sparse: true },
+    isEmailVerified: { type: Boolean, default: false },
+    otpHash: { type: String },
+    otpExpiresAt: { type: Date },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     addresses: { type: [AddressSchema], default: [] },
 }, { timestamps: true });
@@ -25,6 +28,8 @@ UserSchema.set("toJSON", {
     transform: (_doc, ret) => {
         const serialized = ret as Record<string, unknown>;
         delete serialized.password;
+        delete serialized.otpHash;
+        delete serialized.otpExpiresAt;
         delete serialized.__v;
         return ret;
     },
@@ -40,6 +45,9 @@ export interface IUser extends Document {
     email: string;
     password?: string;
     googleId?: string;
+    isEmailVerified: boolean;
+    otpHash?: string;
+    otpExpiresAt?: Date;
     role: UserRoleType;
     addresses: IAddress[];
     createdAt: Date;

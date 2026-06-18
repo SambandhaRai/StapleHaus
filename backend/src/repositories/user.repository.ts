@@ -7,6 +7,7 @@ type CreateUserData = {
     password?: string;
     googleId?: string;
     role?: UserRoleType;
+    isEmailVerified?: boolean;
 };
 
 type UpdateUserData = {
@@ -21,6 +22,9 @@ export interface IUserRepository {
     getUserByGoogleId(googleId: string): Promise<IUser | null>;
     updateOneUser(id: string, data: UpdateUserData): Promise<IUser | null>;
     linkGoogleAccount(userId: string, googleId: string): Promise<IUser | null>;
+    setOtp(userId: string, otpHash: string, otpExpiresAt: Date): Promise<IUser | null>;
+    markEmailVerified(userId: string): Promise<IUser | null>;
+    deleteUserById(userId: string): Promise<IUser | null>;
 
     addAddress(userId: string, address: AddressType): Promise<IUser | null>;
     updateAddress(userId: string, addressId: string, patch: Partial<AddressType>): Promise<IUser | null>;
@@ -55,6 +59,26 @@ export class UserRepository implements IUserRepository {
             { googleId },
             { returnDocument: "after" }
         );
+    }
+
+    async setOtp(userId: string, otpHash: string, otpExpiresAt: Date): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { otpHash, otpExpiresAt },
+            { returnDocument: "after" }
+        );
+    }
+
+    async markEmailVerified(userId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { isEmailVerified: true, $unset: { otpHash: "", otpExpiresAt: "" } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async deleteUserById(userId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndDelete(userId);
     }
 
     async addAddress(userId: string, address: AddressType): Promise<IUser | null> {

@@ -2,10 +2,12 @@ import { UserRepository } from "../repositories/user.repository";
 import { IUser } from "../models/user.model";
 import { HttpError } from "../errors/http-error";
 import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID } from "../config";
-import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto } from "../dtos/user.dto";
+import { sendOtpEmail } from "../config/email";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
+import { randomInt } from "crypto";
 import { OAuth2Client } from "google-auth-library";
 
 let userRepository = new UserRepository();
@@ -23,6 +25,14 @@ export class UserService {
         return jwt.sign(payload, JWT_SECRET, options);
     }
 
+    private async issueOtp(user: IUser) {
+        const otp = randomInt(100000, 1000000).toString();
+        const otpHash = await bcryptjs.hash(otp, 10);
+        const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await userRepository.setOtp(user._id.toString(), otpHash, otpExpiresAt);
+        await sendOtpEmail(user.email, otp);
+    }
+
     async registerUser(data: RegisterUserDto) {
         const existingUser = await userRepository.getUserByEmail(data.email);
         if (existingUser) {
@@ -37,9 +47,58 @@ export class UserService {
             password,
         });
 
-        const token = this.createAuthToken(newUser);
+        try {
+            await this.issueOtp(newUser);
+        } catch (error) {
+            await userRepository.deleteUserById(newUser._id.toString());
+            throw error;
+        }
 
-        return { token, user: newUser };
+        return { user: newUser };
+    }
+
+    async verifyOtp(data: VerifyOtpDto) {
+        const user = await userRepository.getUserByEmail(data.email);
+        if (!user) {
+            throw new HttpError(404, "Account not found");
+        }
+        if (user.isEmailVerified) {
+            throw new HttpError(400, "Email is already verified");
+        }
+        if (!user.otpHash || !user.otpExpiresAt) {
+            throw new HttpError(400, "No verification code found, please request a new one");
+        }
+        if (user.otpExpiresAt.getTime() < Date.now()) {
+            throw new HttpError(400, "Verification code has expired, please request a new one");
+        }
+
+        const isMatch = await bcryptjs.compare(data.otp, user.otpHash);
+        if (!isMatch) {
+            throw new HttpError(400, "Invalid verification code");
+        }
+
+        const verifiedUser = await userRepository.markEmailVerified(user._id.toString());
+        if (!verifiedUser) {
+            throw new HttpError(500, "Unable to verify email");
+        }
+
+        const token = this.createAuthToken(verifiedUser);
+
+        return { token, user: verifiedUser };
+    }
+
+    async resendOtp(data: ResendOtpDto) {
+        const user = await userRepository.getUserByEmail(data.email);
+        if (!user) {
+            throw new HttpError(404, "Account not found");
+        }
+        if (user.isEmailVerified) {
+            throw new HttpError(400, "Email is already verified");
+        }
+
+        await this.issueOtp(user);
+
+        return true;
     }
 
     async loginUser(data: LoginUserDto) {
@@ -51,6 +110,10 @@ export class UserService {
         const isPasswordMatch = await bcryptjs.compare(data.password, existingUser.password);
         if (!isPasswordMatch) {
             throw new HttpError(401, "Invalid email or password");
+        }
+
+        if (existingUser.isEmailVerified === false) {
+            throw new HttpError(403, "Please verify your email before logging in");
         }
 
         const token = this.createAuthToken(existingUser);
@@ -105,6 +168,7 @@ export class UserService {
                         name: profile.name || profile.email.split("@")[0],
                         email: profile.email,
                         googleId: profile.googleId,
+                        isEmailVerified: true,
                     });
                 } catch (error: any) {
                     if (error?.code !== 11000) {

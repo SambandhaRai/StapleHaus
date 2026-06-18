@@ -1,4 +1,4 @@
-import { RegisterUserDto, LoginUserDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { Request, Response } from "express";
 import z from "zod";
@@ -16,12 +16,11 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { token, user } = await userService.registerUser(parsedData.data);
+            const { user } = await userService.registerUser(parsedData.data);
             return res.status(201).json({
                 success: true,
                 data: user,
-                token,
-                message: "User registered successfully"
+                message: "Verification code sent to your email"
             });
         } catch (error: Error | any) {
             return res.status(error.statusCode || 500).json({
@@ -46,6 +45,52 @@ export class AuthController {
                 data: user,
                 token,
                 message: "Login successful"
+            });
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Internal Server Error"
+            });
+        }
+    }
+
+    async verifyOtp(req: Request, res: Response) {
+        try {
+            const parsedData = VerifyOtpDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const { token, user } = await userService.verifyOtp(parsedData.data);
+            return res.status(200).json({
+                success: true,
+                data: user,
+                token,
+                message: "Email verified successfully"
+            });
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json({
+                success: false,
+                message: error.message || "Internal Server Error"
+            });
+        }
+    }
+
+    async resendOtp(req: Request, res: Response) {
+        try {
+            const parsedData = ResendOtpDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            await userService.resendOtp(parsedData.data);
+            return res.status(200).json({
+                success: true,
+                message: "A new verification code has been sent"
             });
         } catch (error: Error | any) {
             return res.status(error.statusCode || 500).json({

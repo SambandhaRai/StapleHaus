@@ -14,6 +14,17 @@ export const LoginUserDto = z.object({
 });
 export type LoginUserDto = z.infer<typeof LoginUserDto>;
 
+export const VerifyOtpDto = z.object({
+    email: z.email("Invalid email address"),
+    otp: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code"),
+});
+export type VerifyOtpDto = z.infer<typeof VerifyOtpDto>;
+
+export const ResendOtpDto = z.object({
+    email: z.email("Invalid email address"),
+});
+export type ResendOtpDto = z.infer<typeof ResendOtpDto>;
+
 export const UpdateUserDto = z.object({
     name: z.string().trim().min(2, "Name must be at least 2 characters").optional(),
 });
