@@ -34,6 +34,22 @@ export const loginUser = async (loginData: any) => {
     }
 }
 
+export const googleLogin = async (credential: string, nonce: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.GOOGLE,
+            { credential, nonce }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Google Login Failed"
+        );
+    }
+}
+
 export const logoutUser = async () => {
     try {
         const response = await axios.post(

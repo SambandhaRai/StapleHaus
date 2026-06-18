@@ -2,6 +2,7 @@ export const API = {
     AUTH: {
         REGISTER: "/api/auth/register",
         LOGIN: "/api/auth/login",
+        GOOGLE: "/api/auth/google",
         LOGOUT: "/api/auth/logout",
     },
     USER: {

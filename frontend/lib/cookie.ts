@@ -44,3 +44,24 @@ export const clearAuthCookies = async () => {
     cookieStore.delete("auth_token");
     cookieStore.delete("user_data");
 };
+
+export const setGoogleNonce = async (nonce: string) => {
+    const cookieStore = await cookies();
+    cookieStore.set("google_nonce", nonce, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 5,
+    });
+}
+
+export const getGoogleNonce = async () => {
+    const cookieStore = await cookies();
+    return cookieStore.get("google_nonce")?.value || null;
+}
+
+export const clearGoogleNonce = async () => {
+    const cookieStore = await cookies();
+    cookieStore.delete("google_nonce");
+};
