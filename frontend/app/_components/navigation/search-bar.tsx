@@ -1,5 +1,6 @@
 "use client";
 
+import type { SyntheticEvent } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X } from "lucide-react";
@@ -14,7 +15,7 @@ export function SearchBar() {
         if (open) inputRef.current?.focus();
     }, [open]);
 
-    const submit = (event: React.FormEvent) => {
+    const submit = (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
         event.preventDefault();
         const q = query.trim();
         if (!q) return;

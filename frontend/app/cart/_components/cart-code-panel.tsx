@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import type { SyntheticEvent } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { handleValidateDiscount } from "@/lib/actions/discounts-action";
 import type { DiscountState } from "./cart-types";
@@ -15,7 +16,7 @@ export function CartCodePanel({ subtotal, discount, onDiscountChange }: CartCode
     const [promoCode, setPromoCode] = useState("");
     const [applyingPromo, setApplyingPromo] = useState(false);
 
-    const applyPromo = async (event: FormEvent<HTMLFormElement>) => {
+    const applyPromo = async (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
         event.preventDefault();
         const code = promoCode.trim();
         if (!code) {

@@ -1,4 +1,4 @@
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, SyntheticEvent } from "react";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { Select } from "@/app/_components/select";
@@ -25,7 +25,7 @@ interface ProductFormModalProps {
     existingImages: string[];
     newFiles: NewImageFile[];
     onClose: () => void;
-    onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+    onSubmit: (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => void;
     onFormChange: (form: ProductFormState) => void;
     onSelectFiles: (event: ChangeEvent<HTMLInputElement>) => void;
     onRemoveExistingImage: (image: string) => void;

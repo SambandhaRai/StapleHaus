@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import type { SyntheticEvent } from "react";
+import { useState } from "react";
 import { toast } from "react-toastify";
 import { handleValidateDiscount } from "@/lib/actions/discounts-action";
 import type { AppliedDiscount, CheckoutCartItem } from "./checkout-types";
@@ -24,7 +25,7 @@ export function CheckoutSummary({
     const discountAmount = Math.min(discount?.amount || 0, subtotal);
     const total = Math.max(0, subtotal - discountAmount);
 
-    const applyDiscount = async (event: FormEvent<HTMLFormElement>) => {
+    const applyDiscount = async (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
         event.preventDefault();
         const nextCode = code.trim();
         if (!nextCode) {
@@ -52,9 +53,6 @@ export function CheckoutSummary({
         <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
             <div className="border border-border p-6">
                 <h2 className="h2 mb-4">Order Summary</h2>
-                <p className="body-sm mb-6 text-success">
-                    Earn {Math.max(0, Math.floor(total / 10))} Staple points with your order
-                </p>
 
                 <div className="border-t border-border pt-5">
                     <p className="mb-5 font-semibold">Order Details</p>

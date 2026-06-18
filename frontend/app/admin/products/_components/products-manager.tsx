@@ -1,6 +1,6 @@
 "use client";
 
-import type { ChangeEvent, FormEvent } from "react";
+import type { ChangeEvent, SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import {
@@ -151,7 +151,7 @@ export function ProductsManager() {
         );
     };
 
-    const submit = async (event: FormEvent<HTMLFormElement>) => {
+    const submit = async (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
         event.preventDefault();
 
         if (!form.brand || !form.category) {

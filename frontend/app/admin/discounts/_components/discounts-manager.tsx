@@ -1,6 +1,6 @@
 "use client";
 
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Plus } from "lucide-react";
@@ -74,7 +74,7 @@ export function DiscountsManager() {
         setOpen(true);
     };
 
-    const submit = async (event: FormEvent<HTMLFormElement>) => {
+    const submit = async (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
         event.preventDefault();
         setSaving(true);
         const payload = {

@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import type { SyntheticEvent } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { handleCheckout } from "@/lib/actions/orders-action";
@@ -91,7 +92,7 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
         return created._id as string;
     };
 
-    const continueToPayment = async (event: FormEvent<HTMLFormElement>) => {
+    const continueToPayment = async (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => {
         event.preventDefault();
 
         if (items.length === 0) {

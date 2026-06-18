@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { Select } from "@/app/_components/select";
@@ -11,7 +11,7 @@ interface DiscountFormModalProps {
     saving: boolean;
     form: DiscountFormState;
     onClose: () => void;
-    onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+    onSubmit: (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => void;
     onFormChange: (form: DiscountFormState) => void;
 }
 

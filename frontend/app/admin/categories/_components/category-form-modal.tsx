@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import type { SyntheticEvent } from "react";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { AdminModal } from "@/app/admin/_components/admin-modal";
@@ -10,7 +10,7 @@ interface CategoryFormModalProps {
     saving: boolean;
     form: CategoryFormState;
     onClose: () => void;
-    onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+    onSubmit: (event: SyntheticEvent<HTMLFormElement, SubmitEvent>) => void;
     onFormChange: (form: CategoryFormState) => void;
 }
 
