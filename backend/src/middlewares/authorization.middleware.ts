@@ -3,6 +3,9 @@ import jwt from "jsonwebtoken";
 import { HttpError } from "../errors/http-error";
 import { JWT_SECRET } from "../config";
 import { UserRoleType } from "../types/user.type";
+import { UserRepository } from "../repositories/user.repository";
+
+const userRepository = new UserRepository();
 
 interface JwtPayload {
     id: string;
@@ -53,13 +56,14 @@ export const authorizedMiddleware = (req: Request, res: Response, next: NextFunc
     }
 };
 
-export const adminOnlyMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const adminOnlyMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.user) {
             throw new HttpError(401, "Authentication required");
         }
 
-        if (req.user.role !== "admin") {
+        const user = await userRepository.getUserById(req.user.id);
+        if (!user || user.role !== "admin") {
             throw new HttpError(403, "Admin access required");
         }
 

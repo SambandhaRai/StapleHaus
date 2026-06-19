@@ -8,16 +8,6 @@ export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const token = request.cookies.get("auth_token")?.value || null;
-    const userData = request.cookies.get("user_data")?.value;
-
-    let user: { role?: string } | null = null;
-    if (token && userData) {
-        try {
-            user = JSON.parse(userData);
-        } catch {
-            user = null;
-        }
-    }
 
     const isGuestOnly = guestOnlyRoutes.some(route => pathname.startsWith(route));
     const isProtected = protectedRoutes.some(route => pathname.startsWith(route));
@@ -31,11 +21,6 @@ export function proxy(request: NextRequest) {
     }
 
     if (isGuestOnly) {
-        const destination = user?.role === "admin" ? "/admin" : "/";
-        return NextResponse.redirect(new URL(destination, request.url));
-    }
-
-    if (isAdminRoute && user?.role !== "admin") {
         return NextResponse.redirect(new URL("/", request.url));
     }
 

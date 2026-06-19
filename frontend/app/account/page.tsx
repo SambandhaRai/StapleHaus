@@ -1,15 +1,25 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getAuthToken, getUserData } from "@/lib/cookie";
+import { getAuthToken } from "@/lib/cookie";
 import { LogoutButton } from "@/app/_components/logout-button";
+import { handleGetProfile } from "@/lib/actions/users-action";
+
+const extractUser = (res: unknown): { name?: string; email?: string } | null => {
+    if (res && typeof res === "object" && "success" in res) {
+        const result = res as { success?: boolean; data?: { name?: string; email?: string } };
+        if (result.success && result.data) return result.data;
+    }
+    return null;
+};
 
 export default async function AccountPage() {
-    const [authToken, user] = await Promise.all([
-        getAuthToken(),
-        getUserData(),
-    ]);
+    const authToken = await getAuthToken();
+    if (!authToken) {
+        redirect("/login");
+    }
 
-    if (!authToken || !user) {
+    const user = extractUser(await handleGetProfile());
+    if (!user) {
         redirect("/login");
     }
 

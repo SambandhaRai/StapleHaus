@@ -1,15 +1,23 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { getUserData } from "@/lib/cookie";
 import { LogoutButton } from "@/app/_components/logout-button";
 import { AdminNav } from "./_components/admin-nav";
+import { handleGetProfile } from "@/lib/actions/users-action";
+
+const extractUser = (res: unknown): { name?: string; role?: string } | null => {
+    if (res && typeof res === "object" && "success" in res) {
+        const result = res as { success?: boolean; data?: { name?: string; role?: string } };
+        if (result.success && result.data) return result.data;
+    }
+    return null;
+};
 
 export default async function AdminLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    const user = await getUserData();
+    const user = extractUser(await handleGetProfile());
 
     if (!user || user.role !== "admin") {
         redirect("/login");
