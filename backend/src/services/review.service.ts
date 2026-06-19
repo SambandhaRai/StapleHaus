@@ -8,6 +8,12 @@ import mongoose from "mongoose";
 let reviewRepository = new ReviewRepository();
 let productRepository = new ProductRepository();
 
+const isDuplicateKeyError = (error: unknown) =>
+    typeof error === "object"
+    && error !== null
+    && "code" in error
+    && (error as { code?: unknown }).code === 11000;
+
 export class ReviewService {
 
     private async recomputeProductRating(productId: string) {
@@ -40,8 +46,8 @@ export class ReviewService {
                 rating: data.rating,
                 body: data.body,
             });
-        } catch (error: any) {
-            if (error?.code === 11000) {
+        } catch (error: unknown) {
+            if (isDuplicateKeyError(error)) {
                 throw new HttpError(409, "You have already reviewed this product");
             }
             throw error;

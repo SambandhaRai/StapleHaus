@@ -34,6 +34,17 @@ const allowedOrigins = [
     "http://127.0.0.1:3000",
 ].filter(Boolean);
 
+const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);
+
+const getHeaderOrigin = (value?: string) => {
+    if (!value) return null;
+    try {
+        return new URL(value).origin;
+    } catch {
+        return null;
+    }
+};
+
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -46,6 +57,21 @@ const corsOptions: CorsOptions = {
     allowedHeaders: ["Content-Type", "Authorization"],
 };
 app.use(cors(corsOptions));
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!unsafeMethods.has(req.method)) {
+        next();
+        return;
+    }
+
+    const requestOrigin = getHeaderOrigin(req.get("origin")) ?? getHeaderOrigin(req.get("referer"));
+    if (!requestOrigin || allowedOrigins.includes(requestOrigin)) {
+        next();
+        return;
+    }
+
+    res.status(403).json({ success: false, message: "Request origin is not allowed" });
+});
 
 app.use(bodyParser.json());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
