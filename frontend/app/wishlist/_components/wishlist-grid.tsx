@@ -66,7 +66,7 @@ export function WishlistGrid({ items }: WishlistGridProps) {
                     >
                         <X size={15} strokeWidth={1.5} />
                     </button>
-                    <ProductCard product={product} />
+                    <ProductCard product={product} loggedIn showWishlistButton={false} />
                 </div>
             ))}
         </div>

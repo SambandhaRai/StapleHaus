@@ -1,40 +1,79 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-import { Star } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
+import { Heart } from "lucide-react";
 import { getUploadUrl } from "@/lib/uploads";
 import { formatPrice as money } from "@/lib/format";
+import { handleAddToWishlist, handleRemoveFromWishlist } from "@/lib/actions/wishlist-action";
 
 interface ProductCardProduct {
+    _id?: string;
     name: string;
     slug: string;
     brand?: { name?: string; slug?: string } | string | null;
     gender?: "m" | "f" | "unisex";
     images?: string[];
     basePrice: number;
-    avgRating?: number;
-    reviewCount?: number;
 }
 
 interface ProductCardProps {
     product: ProductCardProduct;
     priority?: boolean;
+    loggedIn?: boolean;
+    initialWishlisted?: boolean;
+    showWishlistButton?: boolean;
 }
 
-export function ProductCard({ product, priority = false }: ProductCardProps) {
+export function ProductCard({
+    product,
+    priority = false,
+    loggedIn = false,
+    initialWishlisted = false,
+    showWishlistButton = true,
+}: ProductCardProps) {
+    const router = useRouter();
     const brandObj =
         product.brand && typeof product.brand === "object" ? product.brand : undefined;
     const brandName = brandObj?.name;
     const image = getUploadUrl(product.images?.[0]);
-    const roundedRating = Math.round(product.avgRating || 0);
+    const [wishlisted, setWishlisted] = useState(initialWishlisted);
+    const [wishing, setWishing] = useState(false);
 
     const genderSegment = product.gender === "f" ? "women" : "men";
     const href = brandObj?.slug
         ? `/${genderSegment}/brands/${brandObj.slug}/${product.slug}`
         : `/${genderSegment}/brands/unknown/${product.slug}`;
 
+    const handleWishlist = async () => {
+        if (!loggedIn) {
+            router.push("/login");
+            return;
+        }
+        if (!product._id || wishing) return;
+
+        setWishing(true);
+        const result = wishlisted
+            ? await handleRemoveFromWishlist(product._id)
+            : await handleAddToWishlist(product._id);
+        setWishing(false);
+
+        if (!result.success) {
+            toast.error(result.message || "Could not update wishlist");
+            return;
+        }
+
+        setWishlisted((current) => !current);
+        toast.success(result.message || (wishlisted ? "Removed from wishlist" : "Added to wishlist"));
+    };
+
     return (
-        <Link href={href} className="group block">
+        <div className="group">
             <div className="relative mb-3 aspect-[3/4] overflow-hidden bg-neutral-100">
+                <Link href={href} className="relative block h-full">
                 {image ? (
                     <Image
                         src={image}
@@ -49,35 +88,30 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
                         <span className="eyebrow text-subtle">StapleHaus</span>
                     </div>
                 )}
-                {product.reviewCount ? (
-                    <div className="absolute left-3 top-3">
-                        <span className="label-caps inline-flex items-center border border-ink bg-paper/80 px-2 py-1 text-[0.6rem] text-ink backdrop-blur">
-                            {product.avgRating?.toFixed(1)} ★
-                        </span>
-                    </div>
+                </Link>
+                {showWishlistButton && product._id ? (
+                    <button
+                        type="button"
+                        onClick={handleWishlist}
+                        disabled={wishing}
+                        aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                        title={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+                        className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center border border-border bg-paper/90 text-ink backdrop-blur transition hover:bg-ink hover:text-paper disabled:opacity-50"
+                    >
+                        <Heart
+                            size={15}
+                            strokeWidth={1.6}
+                            fill={wishlisted ? "currentColor" : "none"}
+                        />
+                    </button>
                 ) : null}
             </div>
 
             {brandName && <p className="eyebrow mb-1">{brandName}</p>}
-            <div className="flex items-baseline justify-between gap-3">
+            <Link href={href} className="flex items-baseline justify-between gap-3">
                 <h3 className="text-sm font-medium leading-snug">{product.name}</h3>
                 <span className="numeric body-sm whitespace-nowrap">{money(product.basePrice)}</span>
-            </div>
-            {product.reviewCount ? (
-                <div className="mt-1.5 flex items-center gap-1.5">
-                    <div className="flex items-center gap-0.5">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                                key={i}
-                                size={12}
-                                className={i < roundedRating ? "text-ink" : "text-neutral-300"}
-                                fill={i < roundedRating ? "currentColor" : "none"}
-                            />
-                        ))}
-                    </div>
-                    <span className="numeric text-xs text-muted">({product.reviewCount})</span>
-                </div>
-            ) : null}
-        </Link>
+            </Link>
+        </div>
     );
 }

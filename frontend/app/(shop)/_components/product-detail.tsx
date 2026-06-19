@@ -43,6 +43,7 @@ interface ProductRecord {
 }
 
 interface CarouselProduct {
+    _id?: string;
     name: string;
     slug: string;
     brand?: { name?: string; slug?: string } | string | null;
@@ -95,6 +96,23 @@ const isInWishlist = (res: unknown, productId: string): boolean => {
     return false;
 };
 
+const extractWishlistProductIds = (res: unknown): string[] => {
+    if (res && typeof res === "object" && "success" in res) {
+        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
+        if (r.success && Array.isArray(r.data?.productIds)) {
+            return r.data.productIds
+                .map((item) => {
+                    if (item && typeof item === "object" && "_id" in item) {
+                        return String((item as { _id: unknown })._id);
+                    }
+                    return String(item);
+                })
+                .filter(Boolean);
+        }
+    }
+    return [];
+};
+
 const cartSkusForProduct = (res: unknown, productId: string): string[] => {
     if (res && typeof res === "object" && "success" in res) {
         const r = res as {
@@ -137,6 +155,7 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
     if (!product) notFound();
 
     const initialWishlisted = isInWishlist(wishlistRes, product._id);
+    const wishlistedProductIds = extractWishlistProductIds(wishlistRes);
     const cartSkus = cartSkusForProduct(cartRes, product._id);
     const reviewsRes = await handleGetProductReviews(product._id);
     const reviews = extractReviews(reviewsRes);
@@ -250,7 +269,11 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
                             </Link>
                         ) : null}
                     </div>
-                    <ProductCarousel products={moreFromBrand} />
+                    <ProductCarousel
+                        products={moreFromBrand}
+                        loggedIn={loggedIn}
+                        wishlistedProductIds={wishlistedProductIds}
+                    />
                 </section>
             ) : null}
 

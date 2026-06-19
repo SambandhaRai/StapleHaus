@@ -13,6 +13,12 @@ import { OAuth2Client } from "google-auth-library";
 let userRepository = new UserRepository();
 let googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
+const isDuplicateKeyError = (error: unknown) =>
+    typeof error === "object"
+    && error !== null
+    && "code" in error
+    && (error as { code?: unknown }).code === 11000;
+
 export class UserService {
 
     private createAuthToken(user: IUser): string {
@@ -36,16 +42,27 @@ export class UserService {
     async registerUser(data: RegisterUserDto) {
         const existingUser = await userRepository.getUserByEmail(data.email);
         if (existingUser) {
-            throw new HttpError(409, "Email is already in use");
+            if (existingUser.isEmailVerified === false) {
+                await this.issueOtp(existingUser);
+            }
+            return { user: null };
         }
 
         const password = await bcryptjs.hash(data.password, 10);
 
-        const newUser = await userRepository.createUser({
-            name: data.name,
-            email: data.email,
-            password,
-        });
+        let newUser: IUser;
+        try {
+            newUser = await userRepository.createUser({
+                name: data.name,
+                email: data.email,
+                password,
+            });
+        } catch (error: unknown) {
+            if (isDuplicateKeyError(error)) {
+                return { user: null };
+            }
+            throw error;
+        }
 
         try {
             await this.issueOtp(newUser);
@@ -63,18 +80,18 @@ export class UserService {
             throw new HttpError(404, "Account not found");
         }
         if (user.isEmailVerified) {
-            throw new HttpError(400, "Email is already verified");
+            throw new HttpError(400, "Invalid or expired verification code");
         }
         if (!user.otpHash || !user.otpExpiresAt) {
-            throw new HttpError(400, "No verification code found, please request a new one");
+            throw new HttpError(400, "Invalid or expired verification code");
         }
         if (user.otpExpiresAt.getTime() < Date.now()) {
-            throw new HttpError(400, "Verification code has expired, please request a new one");
+            throw new HttpError(400, "Invalid or expired verification code");
         }
 
         const isMatch = await bcryptjs.compare(data.otp, user.otpHash);
         if (!isMatch) {
-            throw new HttpError(400, "Invalid verification code");
+            throw new HttpError(400, "Invalid or expired verification code");
         }
 
         const verifiedUser = await userRepository.markEmailVerified(user._id.toString());
@@ -89,11 +106,8 @@ export class UserService {
 
     async resendOtp(data: ResendOtpDto) {
         const user = await userRepository.getUserByEmail(data.email);
-        if (!user) {
-            throw new HttpError(404, "Account not found");
-        }
-        if (user.isEmailVerified) {
-            throw new HttpError(400, "Email is already verified");
+        if (!user || user.isEmailVerified) {
+            return true;
         }
 
         await this.issueOtp(user);
@@ -113,7 +127,7 @@ export class UserService {
         }
 
         if (existingUser.isEmailVerified === false) {
-            throw new HttpError(403, "Please verify your email before logging in");
+            throw new HttpError(401, "Invalid email or password");
         }
 
         const token = this.createAuthToken(existingUser);
@@ -170,8 +184,8 @@ export class UserService {
                         googleId: profile.googleId,
                         isEmailVerified: true,
                     });
-                } catch (error: any) {
-                    if (error?.code !== 11000) {
+                } catch (error: unknown) {
+                    if (!isDuplicateKeyError(error)) {
                         throw error;
                     }
                     user = await userRepository.getUserByGoogleId(profile.googleId)

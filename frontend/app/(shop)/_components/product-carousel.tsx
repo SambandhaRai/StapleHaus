@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ProductCard } from "./product-card";
 
 interface CarouselProduct {
+    _id?: string;
     name: string;
     slug: string;
     brand?: { name?: string } | string | null;
@@ -17,9 +18,16 @@ interface CarouselProduct {
 interface ProductCarouselProps {
     products: CarouselProduct[];
     priorityCount?: number;
+    loggedIn?: boolean;
+    wishlistedProductIds?: string[];
 }
 
-export function ProductCarousel({ products, priorityCount = 0 }: ProductCarouselProps) {
+export function ProductCarousel({
+    products,
+    priorityCount = 0,
+    loggedIn = false,
+    wishlistedProductIds = [],
+}: ProductCarouselProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const scrollByPage = (direction: 1 | -1) => {
@@ -39,7 +47,12 @@ export function ProductCarousel({ products, priorityCount = 0 }: ProductCarousel
                         key={product.slug}
                         className="w-[44%] shrink-0 sm:w-[31%] md:w-[23.5%] lg:w-[19%]"
                     >
-                        <ProductCard product={product} priority={index < priorityCount} />
+                        <ProductCard
+                            product={product}
+                            priority={index < priorityCount}
+                            loggedIn={loggedIn}
+                            initialWishlisted={Boolean(product._id && wishlistedProductIds.includes(product._id))}
+                        />
                     </div>
                 ))}
             </div>

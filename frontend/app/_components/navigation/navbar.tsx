@@ -47,8 +47,8 @@ export async function Navbar() {
 
     return (
         <header className="sticky top-0 z-10 border-b border-border bg-background/90 backdrop-blur">
-            <div className="flex items-center justify-between px-6 py-4 sm:px-8">
-                <div className="flex items-center gap-5">
+            <div className="relative flex items-center justify-between px-6 py-4 sm:px-8">
+                <div className="relative z-10 flex items-center gap-5">
                     <MenuDrawer userName={activeUser?.name ?? null} accountHref={accountHref} />
                     <nav className="hidden items-center gap-7 md:flex">
                         <NavMenu
@@ -83,13 +83,13 @@ export async function Navbar() {
 
                 <Link
                     href="/"
-                    className="text-xl font-bold tracking-tight"
+                    className="absolute left-1/2 -translate-x-1/2 text-xl font-bold tracking-tight"
                     style={{ fontFamily: "var(--font-display)" }}
                 >
                     STAPLEHAUS
                 </Link>
 
-                <div className="flex items-center gap-5">
+                <div className="relative z-10 flex items-center gap-5">
                     <SearchBar />
                     <AccountMenu userName={activeUser?.name ?? null} accountHref={accountHref} />
                     <CartBadge />

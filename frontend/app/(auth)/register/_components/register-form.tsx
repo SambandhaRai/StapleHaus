@@ -71,7 +71,7 @@ export function RegisterForm() {
             return;
         }
 
-        toast.success("We sent a verification code to your email");
+        toast.success("Check your email if verification is needed");
         router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
     };
 

@@ -26,19 +26,16 @@ const shopLinks = [
     { label: "Clothing", href: "#" },
     { label: "Footwear", href: "#" },
     { label: "Accessories", href: "#" },
-    { label: "Sale", href: "#" },
 ];
 
 const columns: FooterColumn[] = [
     { heading: "Men", links: shopLinks },
     { heading: "Women", links: shopLinks },
     {
-        heading: "Archives",
+        heading: "Sale",
         links: [
-            { label: "New Arrivals", href: "#" },
-            { label: "Brands", href: "#" },
-            { label: "Clothing", href: "#" },
-            { label: "Footwear", href: "#" },
+            { label: "Men's Sale", href: "#" },
+            { label: "Women's Sale", href: "#" },
         ],
     },
     {
@@ -46,8 +43,6 @@ const columns: FooterColumn[] = [
         links: [
             { label: "FAQ", href: "#" },
             { label: "Delivery & Shipping", href: "#" },
-            { label: "Returns", href: "#" },
-            { label: "Duties & Taxes", href: "#" },
             { label: "Contact Us", href: "#" },
         ],
     },

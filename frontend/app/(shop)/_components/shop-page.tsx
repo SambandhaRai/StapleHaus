@@ -7,8 +7,11 @@ import { ShopFilters } from "./shop-filters";
 import { handleGetProducts } from "@/lib/actions/products-action";
 import { handleGetBrands } from "@/lib/actions/brands-action";
 import { handleGetCategories } from "@/lib/actions/categories-action";
+import { handleGetWishlist } from "@/lib/actions/wishlist-action";
+import { getAuthToken } from "@/lib/cookie";
 
 interface ShopProduct {
+    _id?: string;
     name: string;
     slug: string;
     brand?: { name?: string } | string | null;
@@ -76,7 +79,26 @@ const extractProducts = (res: unknown): ProductsResult => {
     return { products: [], page: 1, totalPages: 1, total: 0 };
 };
 
+const extractWishlistProductIds = (res: unknown): string[] => {
+    if (res && typeof res === "object" && "success" in res) {
+        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
+        if (r.success && Array.isArray(r.data?.productIds)) {
+            return r.data.productIds
+                .map((item) => {
+                    if (item && typeof item === "object" && "_id" in item) {
+                        return String((item as { _id: unknown })._id);
+                    }
+                    return String(item);
+                })
+                .filter(Boolean);
+        }
+    }
+    return [];
+};
+
 export async function ShopPage({ gender, title, categorySlug, searchParams }: ShopPageProps) {
+    const authToken = await getAuthToken();
+    const loggedIn = Boolean(authToken);
     const sort = searchParams?.sort || "newest";
     const activeBrands = searchParams?.brand
         ? searchParams.brand.split(",").map((b) => b.trim()).filter(Boolean)
@@ -103,7 +125,7 @@ export async function ShopPage({ gender, title, categorySlug, searchParams }: Sh
         .map((slug) => brands.find((brand) => brand.slug === slug)?._id)
         .filter((id): id is string => Boolean(id));
 
-    const [productsRes, cheapestRes, dearestRes] = await Promise.all([
+    const [productsRes, cheapestRes, dearestRes, wishlistRes] = await Promise.all([
         handleGetProducts({
             gender,
             sort: sort as "newest" | "price_asc" | "price_desc" | "rating",
@@ -117,9 +139,11 @@ export async function ShopPage({ gender, title, categorySlug, searchParams }: Sh
         }),
         handleGetProducts({ gender, category: activeCategory?._id, sort: "price_asc", limit: 1 }),
         handleGetProducts({ gender, category: activeCategory?._id, sort: "price_desc", limit: 1 }),
+        loggedIn ? handleGetWishlist() : Promise.resolve(null),
     ]);
 
     const { products, totalPages, total } = extractProducts(productsRes);
+    const wishlistedProductIds = extractWishlistProductIds(wishlistRes);
 
     const cheapest = extractProducts(cheapestRes).products[0]?.basePrice ?? 0;
     const dearest = extractProducts(dearestRes).products[0]?.basePrice ?? 0;
@@ -182,7 +206,12 @@ export async function ShopPage({ gender, title, categorySlug, searchParams }: Sh
                         <>
                             <div className="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 xl:grid-cols-4">
                                 {products.map((product) => (
-                                    <ProductCard key={product.slug} product={product} />
+                                    <ProductCard
+                                        key={product.slug}
+                                        product={product}
+                                        loggedIn={loggedIn}
+                                        initialWishlisted={Boolean(product._id && wishlistedProductIds.includes(product._id))}
+                                    />
                                 ))}
                             </div>
 

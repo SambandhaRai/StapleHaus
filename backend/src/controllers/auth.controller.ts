@@ -18,10 +18,10 @@ export class AuthController {
                 });
             }
             const { user } = await userService.registerUser(parsedData.data);
-            return res.status(201).json({
+            return res.status(200).json({
                 success: true,
                 data: user,
-                message: "Verification code sent to your email"
+                message: "If this email needs verification, a code will be sent"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);
@@ -82,7 +82,7 @@ export class AuthController {
             await userService.resendOtp(parsedData.data);
             return res.status(200).json({
                 success: true,
-                message: "A new verification code has been sent"
+                message: "If this email needs verification, a new code will be sent"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);
