@@ -59,9 +59,9 @@ export const handleVerifyOtp = async (email: string, otp: string) => {
     }
 }
 
-export const handleResendOtp = async (email: string) => {
+export const handleResendOtp = async (email: string, captchaToken: string) => {
     try {
-        const result = await resendOtp(email);
+        const result = await resendOtp(email, captchaToken);
         return {
             success: Boolean(result.success),
             message: result.message || "A new code has been sent"

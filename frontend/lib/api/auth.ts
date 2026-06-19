@@ -50,11 +50,11 @@ export const verifyOtp = async (email: string, otp: string) => {
     }
 }
 
-export const resendOtp = async (email: string) => {
+export const resendOtp = async (email: string, captchaToken: string) => {
     try {
         const response = await axios.post(
             API.AUTH.RESEND_OTP,
-            { email }
+            { email, captchaToken }
         );
         return response.data;
     } catch (err: Error | any) {

@@ -38,6 +38,37 @@ const loadGsi = (): Promise<void> => {
     return scriptPromise;
 };
 
+const NONCE_REFRESH_MS = 4 * 60 * 1000;
+
+let initPromise: Promise<boolean> | null = null;
+let activeCallback: ((response: { credential: string }) => void) | null = null;
+let lastInitAt = 0;
+
+const runInit = async (): Promise<boolean> => {
+    const [nonce] = await Promise.all([prepareGoogleSignIn(), loadGsi()]);
+    if (!window.google?.accounts?.id) return false;
+    window.google.accounts.id.initialize({
+        client_id: CLIENT_ID!,
+        nonce,
+        callback: (response) => activeCallback?.(response),
+    });
+    lastInitAt = Date.now();
+    return true;
+};
+
+const ensureInitialized = (): Promise<boolean> => {
+    if (initPromise) return initPromise;
+    initPromise = runInit().finally(() => {
+        initPromise = null;
+    });
+    return initPromise;
+};
+
+const refreshNonce = (): void => {
+    if (Date.now() - lastInitAt < NONCE_REFRESH_MS) return;
+    runInit();
+};
+
 export function GoogleSignInButton() {
     const router = useRouter();
     const containerRef = useRef<HTMLDivElement>(null);
@@ -47,38 +78,43 @@ export function GoogleSignInButton() {
 
         let cancelled = false;
 
-        const setup = async () => {
-            const [nonce] = await Promise.all([prepareGoogleSignIn(), loadGsi()]);
-            if (cancelled || !window.google?.accounts?.id || !containerRef.current) return;
+        activeCallback = async (response) => {
+            const res = await handleGoogleLogin(response.credential);
+            if (res.success) {
+                toast.success("Google sign-in succesful!");
+                router.push(res.data?.role === "admin" ? "/admin" : "/");
+                router.refresh();
+            } else {
+                toast.error(res.message || "Google sign-in failed");
+            }
+        };
 
-            window.google.accounts.id.initialize({
-                client_id: CLIENT_ID,
-                nonce,
-                callback: async (response) => {
-                    const res = await handleGoogleLogin(response.credential);
-                    if (res.success) {
-                        toast.success("Welcome!");
-                        router.push(res.data?.role === "admin" ? "/admin" : "/");
-                        router.refresh();
-                    } else {
-                        toast.error(res.message || "Google sign-in failed");
-                    }
-                },
-            });
+        ensureInitialized().then((ready) => {
+            if (cancelled || !ready || !window.google?.accounts?.id || !containerRef.current) return;
 
+            const width = Math.min(containerRef.current.offsetWidth || 320, 400);
             window.google.accounts.id.renderButton(containerRef.current, {
                 type: "standard",
                 theme: "outline",
                 size: "large",
                 text: "continue_with",
-                width: 320,
+                width,
             });
-        };
+        });
 
-        setup();
+        const interval = setInterval(() => {
+            if (!cancelled) refreshNonce();
+        }, NONCE_REFRESH_MS);
+
+        const onVisible = () => {
+            if (!cancelled && document.visibilityState === "visible") refreshNonce();
+        };
+        document.addEventListener("visibilitychange", onVisible);
 
         return () => {
             cancelled = true;
+            clearInterval(interval);
+            document.removeEventListener("visibilitychange", onVisible);
         };
     }, [router]);
 
