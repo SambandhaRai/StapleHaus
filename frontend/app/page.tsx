@@ -125,17 +125,6 @@ export default async function Home() {
         )}
       </section>
 
-      <section className="border-t border-border">
-        <div className="mx-auto w-full max-w-7xl px-6 py-24 text-center">
-          <h2 className="display mb-10">Sale</h2>
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-3">
-            <Link className="h3 link-underline" href="#">Shop Men&apos;s Sale</Link>
-            <span className="h3 text-subtle">/</span>
-            <Link className="h3 link-underline" href="#">Shop Women&apos;s Sale</Link>
-          </div>
-        </div>
-      </section>
-
       <Footer />
     </div>
   );

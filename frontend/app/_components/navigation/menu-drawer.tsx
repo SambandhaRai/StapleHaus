@@ -17,7 +17,6 @@ const navLinks = [
     { label: "Women", href: "#" },
     { label: "Clothing", href: "#" },
     { label: "Footwear", href: "#" },
-    { label: "Accessories", href: "#" },
 ];
 
 export function MenuDrawer({ userName, accountHref }: MenuDrawerProps) {
@@ -145,13 +144,6 @@ export function MenuDrawer({ userName, accountHref }: MenuDrawerProps) {
                                         {link.label}
                                     </Link>
                                 ))}
-                                <Link
-                                    href="#"
-                                    onClick={close}
-                                    className="block py-4 text-sm text-sale transition hover:opacity-70"
-                                >
-                                    Sale
-                                </Link>
                             </nav>
                         </aside>
                     </>,

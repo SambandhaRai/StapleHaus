@@ -27,6 +27,7 @@ const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 export function LoginForm() {
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState("");
+    const [captchaKey, setCaptchaKey] = useState(0);
 
     const {
         register,
@@ -48,6 +49,8 @@ export function LoginForm() {
             router.refresh();
             return;
         }
+        setCaptchaToken("");
+        setCaptchaKey((key) => key + 1);
         toast.error(res.message || "Login failed");
     };
 
@@ -99,7 +102,11 @@ export function LoginForm() {
                     />
                 </div>
 
-                <TurnstileWidget onVerify={setCaptchaToken} />
+                <TurnstileWidget
+                    key={captchaKey}
+                    onVerify={setCaptchaToken}
+                    onExpire={() => setCaptchaToken("")}
+                />
 
                 <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
                     Sign In

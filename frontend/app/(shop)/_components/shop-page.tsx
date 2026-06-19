@@ -205,10 +205,11 @@ export async function ShopPage({ gender, title, categorySlug, searchParams }: Sh
                     {products.length > 0 ? (
                         <>
                             <div className="grid grid-cols-2 gap-x-5 gap-y-10 md:grid-cols-3 xl:grid-cols-4">
-                                {products.map((product) => (
+                                {products.map((product, index) => (
                                     <ProductCard
                                         key={product.slug}
                                         product={product}
+                                        priority={index === 0}
                                         loggedIn={loggedIn}
                                         initialWishlisted={Boolean(product._id && wishlistedProductIds.includes(product._id))}
                                     />
@@ -232,8 +233,8 @@ export async function ShopPage({ gender, title, categorySlug, searchParams }: Sh
                                                 key={pageNumber}
                                                 href={buildHref({ page: pageNumber === 1 ? undefined : String(pageNumber) })}
                                                 className={`numeric flex h-8 min-w-8 items-center justify-center px-2 text-sm transition ${pageNumber === page
-                                                        ? "bg-ink text-paper"
-                                                        : "text-muted hover:text-ink"
+                                                    ? "bg-ink text-paper"
+                                                    : "text-muted hover:text-ink"
                                                     }`}
                                             >
                                                 {pageNumber}

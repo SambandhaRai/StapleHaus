@@ -40,6 +40,7 @@ export function RegisterForm() {
     const router = useRouter();
     const [passwordHelpVisible, setPasswordHelpVisible] = useState(false);
     const [captchaToken, setCaptchaToken] = useState("");
+    const [captchaKey, setCaptchaKey] = useState(0);
 
     const {
         register,
@@ -67,6 +68,8 @@ export function RegisterForm() {
         });
 
         if (!res.success) {
+            setCaptchaToken("");
+            setCaptchaKey((key) => key + 1);
             toast.error(res.message || "Registration failed");
             return;
         }
@@ -136,7 +139,11 @@ export function RegisterForm() {
                     {...register("confirmPassword")}
                 />
 
-                <TurnstileWidget onVerify={setCaptchaToken} />
+                <TurnstileWidget
+                    key={captchaKey}
+                    onVerify={setCaptchaToken}
+                    onExpire={() => setCaptchaToken("")}
+                />
 
                 <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
                     Create Account

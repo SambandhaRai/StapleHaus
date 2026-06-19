@@ -32,13 +32,6 @@ const columns: FooterColumn[] = [
     { heading: "Men", links: shopLinks },
     { heading: "Women", links: shopLinks },
     {
-        heading: "Sale",
-        links: [
-            { label: "Men's Sale", href: "#" },
-            { label: "Women's Sale", href: "#" },
-        ],
-    },
-    {
         heading: "Help",
         links: [
             { label: "FAQ", href: "#" },

@@ -225,11 +225,10 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                             <Link
                                                 key={pageNumber}
                                                 href={buildHref({ page: pageNumber === 1 ? undefined : String(pageNumber) })}
-                                                className={`numeric flex h-8 min-w-8 items-center justify-center px-2 text-sm transition ${
-                                                    pageNumber === page
-                                                        ? "bg-ink text-paper"
-                                                        : "text-muted hover:text-ink"
-                                                }`}
+                                                className={`numeric flex h-8 min-w-8 items-center justify-center px-2 text-sm transition ${pageNumber === page
+                                                    ? "bg-ink text-paper"
+                                                    : "text-muted hover:text-ink"
+                                                    }`}
                                             >
                                                 {pageNumber}
                                             </Link>

@@ -68,16 +68,6 @@ export async function Navbar() {
                             heading="Shop Women"
                             items={categoryItems("/women")}
                         />
-                        <NavMenu
-                            label="Sale"
-                            href="#"
-                            heading="Shop Sale"
-                            triggerClassName="text-sale"
-                            items={[
-                                { label: "Men's Sale", href: "/men/shop" },
-                                { label: "Women's Sale", href: "/women/shop" },
-                            ]}
-                        />
                     </nav>
                 </div>
 
