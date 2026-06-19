@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +12,7 @@ import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { GoogleSignInButton } from "../../_components/google-sign-in-button";
+import { TurnstileWidget } from "../../_components/turnstile-widget";
 import { handleLogin } from "@/lib/actions/auth-action";
 
 const loginSchema = z.object({
@@ -20,8 +22,11 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
 export function LoginForm() {
     const router = useRouter();
+    const [captchaToken, setCaptchaToken] = useState("");
 
     const {
         register,
@@ -32,7 +37,11 @@ export function LoginForm() {
     });
 
     const onSubmit = async (values: LoginValues) => {
-        const res = await handleLogin(values);
+        if (captchaEnabled && !captchaToken) {
+            toast.error("Please complete the captcha");
+            return;
+        }
+        const res = await handleLogin({ ...values, captchaToken });
         if (res.success) {
             toast.success("Welcome back!");
             router.push(res.data?.role === "admin" ? "/admin" : "/");
@@ -89,6 +98,8 @@ export function LoginForm() {
                         {...register("password")}
                     />
                 </div>
+
+                <TurnstileWidget onVerify={setCaptchaToken} />
 
                 <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
                     Sign In

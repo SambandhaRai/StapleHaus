@@ -13,6 +13,7 @@ import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { PasswordStrength, passwordIsStrong } from "../../_components/password-strength";
 import { GoogleSignInButton } from "../../_components/google-sign-in-button";
+import { TurnstileWidget } from "../../_components/turnstile-widget";
 import { handleRegister } from "@/lib/actions/auth-action";
 
 const registerSchema = z
@@ -33,9 +34,12 @@ const registerSchema = z
 
 type RegisterValues = z.infer<typeof registerSchema>;
 
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
 export function RegisterForm() {
     const router = useRouter();
     const [passwordHelpVisible, setPasswordHelpVisible] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState("");
 
     const {
         register,
@@ -50,10 +54,16 @@ export function RegisterForm() {
     const showPasswordStrength = passwordHelpVisible || password.length > 0;
 
     const onSubmit = async (values: RegisterValues) => {
+        if (captchaEnabled && !captchaToken) {
+            toast.error("Please complete the captcha");
+            return;
+        }
+
         const res = await handleRegister({
             name: values.name,
             email: values.email,
             password: values.password,
+            captchaToken,
         });
 
         if (!res.success) {
@@ -125,6 +135,8 @@ export function RegisterForm() {
                     error={errors.confirmPassword?.message}
                     {...register("confirmPassword")}
                 />
+
+                <TurnstileWidget onVerify={setCaptchaToken} />
 
                 <Button type="submit" size="lg" fullWidth isLoading={isSubmitting}>
                     Create Account

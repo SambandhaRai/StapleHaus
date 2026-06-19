@@ -7,9 +7,11 @@ import { toast } from "react-toastify";
 import { BackButton } from "@/app/_components/back-button";
 import { Button } from "@/app/_components/button";
 import { OtpInput } from "../../_components/otp-input";
+import { TurnstileWidget } from "../../_components/turnstile-widget";
 import { handleResendOtp, handleVerifyOtp } from "@/lib/actions/auth-action";
 
 const RESEND_COOLDOWN = 30;
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
 
 export function VerifyEmailForm() {
     const router = useRouter();
@@ -19,6 +21,8 @@ export function VerifyEmailForm() {
     const [verifying, setVerifying] = useState(false);
     const [resending, setResending] = useState(false);
     const [cooldown, setCooldown] = useState(email ? RESEND_COOLDOWN : 0);
+    const [captchaToken, setCaptchaToken] = useState("");
+    const [captchaKey, setCaptchaKey] = useState(0);
 
     useEffect(() => {
         if (cooldown <= 0) return;
@@ -50,10 +54,16 @@ export function VerifyEmailForm() {
 
     const onResend = async () => {
         if (!email || resending || cooldown > 0) return;
+        if (captchaEnabled && !captchaToken) {
+            toast.error("Please complete the captcha");
+            return;
+        }
 
         setResending(true);
-        const res = await handleResendOtp(email);
+        const res = await handleResendOtp(email, captchaToken);
         setResending(false);
+        setCaptchaToken("");
+        setCaptchaKey((k) => k + 1);
 
         if (res.success) {
             setOtp("");
@@ -109,6 +119,12 @@ export function VerifyEmailForm() {
                             Verify &amp; Continue
                         </Button>
                     </form>
+
+                    {cooldown > 0 ? null : (
+                        <div className="mt-6">
+                            <TurnstileWidget key={captchaKey} onVerify={setCaptchaToken} />
+                        </div>
+                    )}
 
                     <p className="body-sm mt-6 text-muted">
                         Didn&apos;t get the code?{" "}
