@@ -3,21 +3,27 @@
 import {
     getProductReviews,
     createReview,
-    deleteReview
+    deleteReview,
+    type ReviewPayload,
 } from "../api/reviews";
+
+const getActionErrorMessage = (err: unknown, fallback: string) => {
+    if (err instanceof Error && err.message) return err.message;
+    return fallback;
+};
 
 export const handleGetProductReviews = async (productId: string) => {
     try {
         return await getProductReviews(productId);
-    } catch (err: Error | any) {
+    } catch (err: unknown) {
         return {
             success: false,
-            message: err.message || "Failed to load reviews"
+            message: getActionErrorMessage(err, "Failed to load reviews")
         };
     }
 }
 
-export const handleCreateReview = async (productId: string, reviewData: any) => {
+export const handleCreateReview = async (productId: string, reviewData: ReviewPayload) => {
     try {
         const result = await createReview(productId, reviewData);
         if (result.success) {
@@ -31,10 +37,10 @@ export const handleCreateReview = async (productId: string, reviewData: any) => 
             success: false,
             message: result.message || "Failed to submit review"
         };
-    } catch (err: Error | any) {
+    } catch (err: unknown) {
         return {
             success: false,
-            message: err.message || "Failed to submit review"
+            message: getActionErrorMessage(err, "Failed to submit review")
         };
     }
 }
@@ -52,10 +58,10 @@ export const handleDeleteReview = async (id: string) => {
             success: false,
             message: result.message || "Failed to delete review"
         };
-    } catch (err: Error | any) {
+    } catch (err: unknown) {
         return {
             success: false,
-            message: err.message || "Failed to delete review"
+            message: getActionErrorMessage(err, "Failed to delete review")
         };
     }
 }

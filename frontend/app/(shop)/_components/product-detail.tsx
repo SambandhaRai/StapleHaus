@@ -6,11 +6,13 @@ import { Footer } from "@/app/_components/footer";
 import { ProductCarousel } from "./product-carousel";
 import { ProductGallery } from "./product-gallery";
 import { ProductBuyPanel } from "./product-buy-panel";
+import { ProductReviews, type ProductReview } from "./product-reviews";
 import { getUploadUrl } from "@/lib/uploads";
-import { getAuthToken } from "@/lib/cookie";
+import { getAuthToken, getUserData } from "@/lib/cookie";
 import { handleGetProductBySlug, handleGetProducts } from "@/lib/actions/products-action";
 import { handleGetWishlist } from "@/lib/actions/wishlist-action";
 import { handleGetCart } from "@/lib/actions/cart-action";
+import { handleGetProductReviews } from "@/lib/actions/reviews-action";
 
 interface Variant {
     _id: string;
@@ -70,6 +72,14 @@ const extractProducts = (res: unknown): CarouselProduct[] => {
     return [];
 };
 
+const extractReviews = (res: unknown): ProductReview[] => {
+    if (res && typeof res === "object" && "success" in res) {
+        const r = res as { success?: boolean; data?: ProductReview[] };
+        if (r.success && Array.isArray(r.data)) return r.data;
+    }
+    return [];
+};
+
 const isInWishlist = (res: unknown, productId: string): boolean => {
     if (res && typeof res === "object" && "success" in res) {
         const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
@@ -111,7 +121,10 @@ interface ProductDetailProps {
 }
 
 export async function ProductDetail({ slug }: ProductDetailProps) {
-    const authToken = await getAuthToken();
+    const [authToken, currentUser] = await Promise.all([
+        getAuthToken(),
+        getUserData(),
+    ]);
     const loggedIn = Boolean(authToken);
 
     const [productRes, wishlistRes, cartRes] = await Promise.all([
@@ -125,6 +138,8 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
 
     const initialWishlisted = isInWishlist(wishlistRes, product._id);
     const cartSkus = cartSkusForProduct(cartRes, product._id);
+    const reviewsRes = await handleGetProductReviews(product._id);
+    const reviews = extractReviews(reviewsRes);
 
     const brand = asRef(product.brand);
     const category = asRef(product.category);
@@ -211,6 +226,16 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
                     </div>
                 </div>
             </div>
+
+            <ProductReviews
+                productId={product._id}
+                productName={product.name}
+                loggedIn={loggedIn}
+                currentUserId={currentUser?._id}
+                currentUserName={currentUser?.name}
+                currentUserRole={currentUser?.role}
+                initialReviews={reviews}
+            />
 
             {moreFromBrand.length > 0 ? (
                 <section className="mx-auto w-full max-w-7xl px-6 pb-20">
