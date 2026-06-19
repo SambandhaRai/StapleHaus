@@ -10,7 +10,7 @@ interface ShopPriceFilterProps {
     initialMax: number;
 }
 
-const money = (n: number) => `$${Math.round(n).toLocaleString()}`;
+const money = (n: number) => `NRs. ${Math.round(n).toLocaleString("en-IN")}`;
 
 export function ShopPriceFilter({ minBound, maxBound, initialMin, initialMax }: ShopPriceFilterProps) {
     const router = useRouter();

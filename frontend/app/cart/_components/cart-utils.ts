@@ -1,7 +1,8 @@
 import { getUploadUrl } from "@/lib/uploads";
+import { formatPrice } from "@/lib/format";
 import type { CartItem, CartProduct, CartVariant } from "./cart-types";
 
-export const money = (value: number) => `$${value.toFixed(2)}`;
+export const money = formatPrice;
 
 export const getProduct = (item: CartItem): CartProduct | null => {
     if (item.productId && typeof item.productId === "object") {

@@ -1,3 +1,4 @@
+import { formatPrice } from "@/lib/format";
 import type { OrderRecord } from "./order-types";
 import { ORDER_STATUSES } from "./order-types";
 
@@ -31,7 +32,7 @@ export function OrdersTable({ orders, updatingId, onStatusChange }: OrdersTableP
                                 {Array.isArray(order.items) ? order.items.length : 0}
                             </td>
                             <td className="numeric px-4 py-3 text-right">
-                                ${Number(order.total || 0).toFixed(2)}
+                                {formatPrice(order.total)}
                             </td>
                             <td className="px-4 py-3 text-muted">{order.paymentStatus}</td>
                             <td className="px-4 py-3">

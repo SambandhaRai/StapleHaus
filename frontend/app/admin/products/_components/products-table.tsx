@@ -1,4 +1,5 @@
 import { Pencil, Trash2 } from "lucide-react";
+import { formatPrice } from "@/lib/format";
 import type { ProductRecord } from "./product-admin-types";
 
 interface ProductsTableProps {
@@ -31,7 +32,7 @@ export function ProductsTable({ products, onEdit, onDelete }: ProductsTableProps
                                     : "—"}
                             </td>
                             <td className="numeric px-4 py-3 text-right">
-                                ${Number(product.basePrice || 0).toFixed(2)}
+                                {formatPrice(product.basePrice)}
                             </td>
                             <td className="numeric px-4 py-3 text-right text-muted">
                                 {Array.isArray(product.variants) ? product.variants.length : 0}

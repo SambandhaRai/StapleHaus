@@ -1,4 +1,5 @@
 import { Pencil, Trash2 } from "lucide-react";
+import { formatPrice } from "@/lib/format";
 import type { DiscountRecord } from "./discount-types";
 
 interface DiscountsTableProps {
@@ -29,7 +30,7 @@ export function DiscountsTable({ discounts, onEdit, onDelete }: DiscountsTablePr
                             <td className="numeric px-4 py-3 text-right">
                                 {discount.type === "percent"
                                     ? `${discount.value}%`
-                                    : `$${discount.value}`}
+                                    : formatPrice(discount.value)}
                             </td>
                             <td className="numeric px-4 py-3 text-right text-muted">
                                 {discount.usedCount ?? 0}

@@ -7,6 +7,7 @@ import { Heart, Check } from "lucide-react";
 import { handleAddToCart } from "@/lib/actions/cart-action";
 import { handleAddToWishlist, handleRemoveFromWishlist } from "@/lib/actions/wishlist-action";
 import { useCart } from "@/app/_components/cart-provider";
+import { formatPrice as money } from "@/lib/format";
 
 interface Variant {
     _id: string;
@@ -27,8 +28,6 @@ interface ProductBuyPanelProps {
     initialWishlisted: boolean;
     initialCartSkus: string[];
 }
-
-const money = (n: number) => `$${n.toFixed(2)}`;
 
 export function ProductBuyPanel({
     productId,

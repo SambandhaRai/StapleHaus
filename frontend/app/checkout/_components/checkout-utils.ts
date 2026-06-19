@@ -1,6 +1,7 @@
+import { formatPrice } from "@/lib/format";
 import type { CheckoutCartItem, CheckoutProduct } from "./checkout-types";
 
-export const money = (value: number) => `$${value.toFixed(2)}`;
+export const money = formatPrice;
 
 export const getProduct = (item: CheckoutCartItem): CheckoutProduct | null =>
     item.productId && typeof item.productId === "object" ? item.productId : null;

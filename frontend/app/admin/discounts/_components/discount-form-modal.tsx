@@ -45,7 +45,7 @@ export function DiscountFormModal({
                         onChange={(event) => onFormChange({ ...form, type: event.target.value })}
                     >
                         <option value="percent">Percent (%)</option>
-                        <option value="fixed">Fixed ($)</option>
+                        <option value="fixed">Fixed (NRs.)</option>
                     </Select>
                     <Input
                         label="Value"

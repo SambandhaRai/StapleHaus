@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Star } from "lucide-react";
 import { getUploadUrl } from "@/lib/uploads";
+import { formatPrice as money } from "@/lib/format";
 
 interface ProductCardProduct {
     name: string;
@@ -16,11 +17,10 @@ interface ProductCardProduct {
 
 interface ProductCardProps {
     product: ProductCardProduct;
+    priority?: boolean;
 }
 
-const money = (n: number) => `$${n.toFixed(2)}`;
-
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, priority = false }: ProductCardProps) {
     const brandObj =
         product.brand && typeof product.brand === "object" ? product.brand : undefined;
     const brandName = brandObj?.name;
@@ -40,6 +40,7 @@ export function ProductCard({ product }: ProductCardProps) {
                         src={image}
                         alt={product.name}
                         fill
+                        priority={priority}
                         sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, (min-width: 640px) 33vw, 50vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-105"
                     />

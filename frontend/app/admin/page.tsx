@@ -4,6 +4,7 @@ import { handleGetBrands } from "@/lib/actions/brands-action";
 import { handleGetCategories } from "@/lib/actions/categories-action";
 import { handleGetAllOrders } from "@/lib/actions/orders-action";
 import { handleGetAllDiscounts } from "@/lib/actions/discounts-action";
+import { formatPrice } from "@/lib/format";
 
 type ListResult = {
     data?: unknown[];
@@ -64,7 +65,7 @@ export default async function AdminDashboard() {
                         className="numeric text-4xl font-semibold"
                         style={{ fontFamily: "var(--font-display)" }}
                     >
-                        ${revenue.toFixed(2)}
+                        {formatPrice(revenue)}
                     </p>
                 </div>
             </div>

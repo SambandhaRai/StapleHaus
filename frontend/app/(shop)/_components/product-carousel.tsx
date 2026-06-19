@@ -16,9 +16,10 @@ interface CarouselProduct {
 
 interface ProductCarouselProps {
     products: CarouselProduct[];
+    priorityCount?: number;
 }
 
-export function ProductCarousel({ products }: ProductCarouselProps) {
+export function ProductCarousel({ products, priorityCount = 0 }: ProductCarouselProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     const scrollByPage = (direction: 1 | -1) => {
@@ -33,12 +34,12 @@ export function ProductCarousel({ products }: ProductCarouselProps) {
                 ref={scrollRef}
                 className="flex gap-5 overflow-x-auto scroll-smooth pb-2 [-ms-overflow-style:none] scrollbar-none [&::-webkit-scrollbar]:hidden"
             >
-                {products.map((product) => (
+                {products.map((product, index) => (
                     <div
                         key={product.slug}
                         className="w-[44%] shrink-0 sm:w-[31%] md:w-[23.5%] lg:w-[19%]"
                     >
-                        <ProductCard product={product} />
+                        <ProductCard product={product} priority={index < priorityCount} />
                     </div>
                 ))}
             </div>

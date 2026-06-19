@@ -73,7 +73,7 @@ export default async function Home() {
           <Link className="label-caps link-underline" href="/men/shop">View all</Link>
         </div>
         {mens.length > 0 ? (
-          <ProductCarousel products={mens} />
+          <ProductCarousel products={mens} priorityCount={5} />
         ) : (
           <p className="body-sm text-muted">No products available right now.</p>
         )}

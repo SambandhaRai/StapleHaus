@@ -4,6 +4,7 @@ import { Footer } from "@/app/_components/footer";
 import { Navbar } from "@/app/_components/navigation/navbar";
 import { handleGetMyOrders } from "@/lib/actions/orders-action";
 import { getAuthToken } from "@/lib/cookie";
+import { formatPrice as money } from "@/lib/format";
 
 type OrderItem = {
     name?: string;
@@ -18,8 +19,6 @@ type OrderRecord = {
     orderStatus?: string;
     createdAt?: string;
 };
-
-const money = (value: number) => `$${value.toFixed(2)}`;
 
 const extractOrders = (res: unknown): OrderRecord[] => {
     if (res && typeof res === "object" && "success" in res) {
