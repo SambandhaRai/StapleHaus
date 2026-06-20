@@ -1,5 +1,5 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { Request, Response } from "express";
 import z from "zod";
@@ -37,7 +37,36 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { token, user } = await userService.loginUser(parsedData.data);
+            const result = await userService.loginUser(parsedData.data);
+            if (result.twoFactorRequired) {
+                return res.status(200).json({
+                    success: true,
+                    twoFactorRequired: true,
+                    challengeToken: result.challengeToken,
+                    message: "Enter your authentication code"
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                data: result.user,
+                token: result.token,
+                message: "Login successful"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async loginTwoFactor(req: Request, res: Response) {
+        try {
+            const parsedData = LoginTwoFactorDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const { token, user } = await userService.loginWithTwoFactor(parsedData.data);
             return res.status(200).json({
                 success: true,
                 data: user,

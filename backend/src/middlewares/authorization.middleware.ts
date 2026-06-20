@@ -11,6 +11,7 @@ interface JwtPayload {
     id: string;
     email: string;
     role: UserRoleType;
+    purpose?: string;
 }
 
 export const authorizedMiddleware = (req: Request, res: Response, next: NextFunction) => {
@@ -28,6 +29,10 @@ export const authorizedMiddleware = (req: Request, res: Response, next: NextFunc
         }
 
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+
+        if (decoded.purpose !== "session") {
+            throw new HttpError(401, "Invalid token");
+        }
 
         req.user = {
             id: decoded.id,

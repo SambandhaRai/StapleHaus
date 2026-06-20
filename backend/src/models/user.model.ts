@@ -22,6 +22,10 @@ const UserSchema: Schema = new Schema({
     otpExpiresAt: { type: Date },
     role: { type: String, enum: ["customer", "admin"], default: "customer" },
     addresses: { type: [AddressSchema], default: [] },
+    twoFactorEnabled: { type: Boolean, default: false },
+    twoFactorSecret: { type: String },
+    twoFactorPendingSecret: { type: String },
+    twoFactorBackupCodes: { type: [String], default: undefined },
 }, { timestamps: true });
 
 UserSchema.set("toJSON", {
@@ -30,6 +34,9 @@ UserSchema.set("toJSON", {
         delete serialized.password;
         delete serialized.otpHash;
         delete serialized.otpExpiresAt;
+        delete serialized.twoFactorSecret;
+        delete serialized.twoFactorPendingSecret;
+        delete serialized.twoFactorBackupCodes;
         delete serialized.__v;
         return ret;
     },
@@ -50,6 +57,10 @@ export interface IUser extends Document {
     otpExpiresAt?: Date;
     role: UserRoleType;
     addresses: IAddress[];
+    twoFactorEnabled: boolean;
+    twoFactorSecret?: string;
+    twoFactorPendingSecret?: string;
+    twoFactorBackupCodes?: string[];
     createdAt: Date;
     updatedAt: Date;
 }

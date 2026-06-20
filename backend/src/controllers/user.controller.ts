@@ -1,5 +1,5 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { UpdateUserDto, CreateAddressDto, UpdateAddressDto } from "../dtos/user.dto";
+import { UpdateUserDto, CreateAddressDto, UpdateAddressDto, EnableTwoFactorDto, DisableTwoFactorDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { Request, Response } from "express";
 import z from "zod";
@@ -110,6 +110,70 @@ export class UserController {
                 success: true,
                 data: updatedUser,
                 message: "Address removed successfully"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async setupTwoFactor(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: "Unauthorized" });
+            }
+            const data = await userService.setupTwoFactor(userId);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Scan the QR code, then confirm with a code"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async enableTwoFactor(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: "Unauthorized" });
+            }
+            const parsedData = EnableTwoFactorDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const data = await userService.enableTwoFactor(userId, parsedData.data.token);
+            return res.status(200).json({
+                success: true,
+                data,
+                message: "Two-factor authentication enabled"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async disableTwoFactor(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: "Unauthorized" });
+            }
+            const parsedData = DisableTwoFactorDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            await userService.disableTwoFactor(userId, parsedData.data.password);
+            return res.status(200).json({
+                success: true,
+                message: "Two-factor authentication disabled"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);

@@ -26,6 +26,11 @@ export interface IUserRepository {
     markEmailVerified(userId: string): Promise<IUser | null>;
     deleteUserById(userId: string): Promise<IUser | null>;
 
+    setPendingTwoFactor(userId: string, encryptedSecret: string): Promise<IUser | null>;
+    activateTwoFactor(userId: string, encryptedSecret: string, backupCodeHashes: string[]): Promise<IUser | null>;
+    disableTwoFactor(userId: string): Promise<IUser | null>;
+    removeBackupCode(userId: string, codeHash: string): Promise<IUser | null>;
+
     addAddress(userId: string, address: AddressType): Promise<IUser | null>;
     updateAddress(userId: string, addressId: string, patch: Partial<AddressType>): Promise<IUser | null>;
     removeAddress(userId: string, addressId: string): Promise<IUser | null>;
@@ -79,6 +84,46 @@ export class UserRepository implements IUserRepository {
 
     async deleteUserById(userId: string): Promise<IUser | null> {
         return await UserModel.findByIdAndDelete(userId);
+    }
+
+    async setPendingTwoFactor(userId: string, encryptedSecret: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { twoFactorPendingSecret: encryptedSecret },
+            { returnDocument: "after" }
+        );
+    }
+
+    async activateTwoFactor(userId: string, encryptedSecret: string, backupCodeHashes: string[]): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            {
+                twoFactorEnabled: true,
+                twoFactorSecret: encryptedSecret,
+                twoFactorBackupCodes: backupCodeHashes,
+                $unset: { twoFactorPendingSecret: "" },
+            },
+            { returnDocument: "after" }
+        );
+    }
+
+    async disableTwoFactor(userId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            {
+                twoFactorEnabled: false,
+                $unset: { twoFactorSecret: "", twoFactorPendingSecret: "", twoFactorBackupCodes: "" },
+            },
+            { returnDocument: "after" }
+        );
+    }
+
+    async removeBackupCode(userId: string, codeHash: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { $pull: { twoFactorBackupCodes: codeHash } },
+            { returnDocument: "after" }
+        );
     }
 
     async addAddress(userId: string, address: AddressType): Promise<IUser | null> {

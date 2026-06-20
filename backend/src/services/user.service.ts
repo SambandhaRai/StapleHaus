@@ -2,13 +2,27 @@ import { UserRepository } from "../repositories/user.repository";
 import { IUser } from "../models/user.model";
 import { HttpError } from "../errors/http-error";
 import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID } from "../config";
-import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
 import { sendOtpEmail } from "../config/email";
+import { encryptSecret, decryptSecret } from "../utils/crypto";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { randomInt } from "crypto";
+import { randomInt, randomBytes } from "crypto";
 import { OAuth2Client } from "google-auth-library";
+import * as OTPAuth from "otpauth";
+
+const TWO_FACTOR_ISSUER = "StapleHaus";
+
+const createTotp = (base32Secret: string, label?: string) =>
+    new OTPAuth.TOTP({
+        issuer: TWO_FACTOR_ISSUER,
+        label: label || TWO_FACTOR_ISSUER,
+        algorithm: "SHA1",
+        digits: 6,
+        period: 30,
+        secret: OTPAuth.Secret.fromBase32(base32Secret),
+    });
 
 let userRepository = new UserRepository();
 let googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -26,9 +40,40 @@ export class UserService {
             id: user._id,
             email: user.email,
             role: user.role,
+            purpose: "session",
         };
         const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as SignOptions["expiresIn"] };
         return jwt.sign(payload, JWT_SECRET, options);
+    }
+
+    private createChallengeToken(user: IUser): string {
+        return jwt.sign({ id: user._id, purpose: "2fa" }, JWT_SECRET, { expiresIn: "5m" });
+    }
+
+    private verifyTotp(encryptedSecret: string, code: string): boolean {
+        if (!/^\d{6}$/.test(code)) {
+            return false;
+        }
+        const totp = createTotp(decryptSecret(encryptedSecret));
+        return totp.validate({ token: code, window: 1 }) !== null;
+    }
+
+    private generateBackupCodes(): string[] {
+        return Array.from({ length: 10 }, () => randomBytes(5).toString("hex"));
+    }
+
+    private async consumeBackupCode(user: IUser, code: string): Promise<boolean> {
+        const normalized = code.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (!normalized || !user.twoFactorBackupCodes?.length) {
+            return false;
+        }
+        for (const hash of user.twoFactorBackupCodes) {
+            if (await bcryptjs.compare(normalized, hash)) {
+                await userRepository.removeBackupCode(user._id.toString(), hash);
+                return true;
+            }
+        }
+        return false;
     }
 
     private async issueOtp(user: IUser) {
@@ -130,9 +175,96 @@ export class UserService {
             throw new HttpError(401, "Invalid email or password");
         }
 
+        if (existingUser.twoFactorEnabled) {
+            return { twoFactorRequired: true as const, challengeToken: this.createChallengeToken(existingUser) };
+        }
+
         const token = this.createAuthToken(existingUser);
 
-        return { token, user: existingUser };
+        return { twoFactorRequired: false as const, token, user: existingUser };
+    }
+
+    async loginWithTwoFactor(data: LoginTwoFactorDto) {
+        let payload: { id?: string; purpose?: string };
+        try {
+            payload = jwt.verify(data.challengeToken, JWT_SECRET) as { id?: string; purpose?: string };
+        } catch {
+            throw new HttpError(401, "Your verification session expired, please sign in again");
+        }
+
+        if (payload.purpose !== "2fa" || !payload.id) {
+            throw new HttpError(401, "Invalid verification session");
+        }
+
+        const user = await userRepository.getUserById(payload.id);
+        if (!user || !user.twoFactorEnabled || !user.twoFactorSecret) {
+            throw new HttpError(401, "Invalid verification session");
+        }
+
+        const verified = this.verifyTotp(user.twoFactorSecret, data.code)
+            || await this.consumeBackupCode(user, data.code);
+        if (!verified) {
+            throw new HttpError(401, "Invalid authentication code");
+        }
+
+        const token = this.createAuthToken(user);
+
+        return { token, user };
+    }
+
+    async setupTwoFactor(userId: string) {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpError(404, "Account not found");
+        }
+        if (user.twoFactorEnabled) {
+            throw new HttpError(400, "Two-factor authentication is already enabled");
+        }
+
+        const secret = new OTPAuth.Secret({ size: 20 });
+        const totp = createTotp(secret.base32, user.email);
+        await userRepository.setPendingTwoFactor(userId, encryptSecret(secret.base32));
+
+        return { otpauthUri: totp.toString(), secret: secret.base32 };
+    }
+
+    async enableTwoFactor(userId: string, code: string) {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpError(404, "Account not found");
+        }
+        if (user.twoFactorEnabled) {
+            throw new HttpError(400, "Two-factor authentication is already enabled");
+        }
+        if (!user.twoFactorPendingSecret) {
+            throw new HttpError(400, "Start two-factor setup first");
+        }
+        if (!this.verifyTotp(user.twoFactorPendingSecret, code)) {
+            throw new HttpError(400, "Invalid authentication code");
+        }
+
+        const backupCodes = this.generateBackupCodes();
+        const backupCodeHashes = await Promise.all(backupCodes.map((c) => bcryptjs.hash(c, 10)));
+        await userRepository.activateTwoFactor(userId, user.twoFactorPendingSecret, backupCodeHashes);
+
+        return { backupCodes };
+    }
+
+    async disableTwoFactor(userId: string, password: string) {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpError(404, "Account not found");
+        }
+        if (!user.twoFactorEnabled) {
+            throw new HttpError(400, "Two-factor authentication is not enabled");
+        }
+        if (!user.password || !(await bcryptjs.compare(password, user.password))) {
+            throw new HttpError(401, "Incorrect password");
+        }
+
+        await userRepository.disableTwoFactor(userId);
+
+        return true;
     }
 
     private async verifyGoogleToken(idToken: string, expectedNonce: string) {

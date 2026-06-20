@@ -25,6 +25,22 @@ export const ResendOtpDto = z.object({
 });
 export type ResendOtpDto = z.infer<typeof ResendOtpDto>;
 
+export const EnableTwoFactorDto = z.object({
+    token: z.string().trim().regex(/^\d{6}$/, "Enter the 6-digit code"),
+});
+export type EnableTwoFactorDto = z.infer<typeof EnableTwoFactorDto>;
+
+export const DisableTwoFactorDto = z.object({
+    password: z.string().min(1, "Password is required"),
+});
+export type DisableTwoFactorDto = z.infer<typeof DisableTwoFactorDto>;
+
+export const LoginTwoFactorDto = z.object({
+    challengeToken: z.string().trim().min(1, "Challenge token is required"),
+    code: z.string().trim().min(6, "Authentication code is required").max(20),
+});
+export type LoginTwoFactorDto = z.infer<typeof LoginTwoFactorDto>;
+
 export const UpdateUserDto = z.object({
     name: z.string().trim().min(2, "Name must be at least 2 characters").optional(),
 });

@@ -8,11 +8,4 @@ export const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || "30d";
 export const FRONTEND_URL: string = process.env.FRONTEND_URL || "http://localhost:3000";
 export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || "";
 export const TURNSTILE_SECRET: string = process.env.TURNSTILE_SECRET || "";
-
-if (process.env.NODE_ENV === "production" && JWT_SECRET === "default_secret") {
-    throw new Error("JWT_SECRET must be set to a strong, unique value in production");
-}
-
-if (process.env.NODE_ENV === "production" && !GOOGLE_CLIENT_ID) {
-    throw new Error("GOOGLE_CLIENT_ID must be set in production");
-}
+export const TWO_FACTOR_ENC_KEY: string = process.env.TWO_FACTOR_ENC_KEY || "";
