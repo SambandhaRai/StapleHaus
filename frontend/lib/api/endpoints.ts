@@ -4,6 +4,7 @@ export const API = {
         VERIFY_OTP: "/api/auth/verify-otp",
         RESEND_OTP: "/api/auth/resend-otp",
         LOGIN: "/api/auth/login",
+        LOGIN_2FA: "/api/auth/login/2fa",
         GOOGLE: "/api/auth/google",
         LOGOUT: "/api/auth/logout",
     },
@@ -13,6 +14,9 @@ export const API = {
         ADD_ADDRESS: "/api/users/me/addresses",
         UPDATE_ADDRESS: (addressId: string) => `/api/users/me/addresses/${addressId}`,
         DELETE_ADDRESS: (addressId: string) => `/api/users/me/addresses/${addressId}`,
+        TWO_FACTOR_SETUP: "/api/users/me/2fa/setup",
+        TWO_FACTOR_ENABLE: "/api/users/me/2fa/enable",
+        TWO_FACTOR_DISABLE: "/api/users/me/2fa/disable",
     },
     PRODUCT: {
         GET_ALL: (

@@ -34,6 +34,22 @@ export const loginUser = async (loginData: any) => {
     }
 }
 
+export const loginTwoFactor = async (challengeToken: string, code: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.LOGIN_2FA,
+            { challengeToken, code }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Login Failed"
+        );
+    }
+}
+
 export const verifyOtp = async (email: string, otp: string) => {
     try {
         const response = await axios.post(

@@ -77,3 +77,24 @@ export const clearGoogleNonce = async () => {
     const cookieStore = await cookies();
     cookieStore.delete("google_nonce");
 };
+
+export const setTwoFactorChallenge = async (challengeToken: string) => {
+    const cookieStore = await cookies();
+    cookieStore.set("twofa_challenge", challengeToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 5,
+    });
+};
+
+export const getTwoFactorChallenge = async () => {
+    const cookieStore = await cookies();
+    return cookieStore.get("twofa_challenge")?.value || null;
+};
+
+export const clearTwoFactorChallenge = async () => {
+    const cookieStore = await cookies();
+    cookieStore.delete("twofa_challenge");
+};

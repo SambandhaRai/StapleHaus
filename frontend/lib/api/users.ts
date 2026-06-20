@@ -39,3 +39,30 @@ export const addAddress = async (address: AddressPayload) => {
         throw new Error(getApiErrorMessage(err, "Failed to add address"));
     }
 };
+
+export const setupTwoFactor = async () => {
+    try {
+        const response = await axios.post(API.USER.TWO_FACTOR_SETUP);
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to start two-factor setup"));
+    }
+};
+
+export const enableTwoFactor = async (token: string) => {
+    try {
+        const response = await axios.post(API.USER.TWO_FACTOR_ENABLE, { token });
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to enable two-factor authentication"));
+    }
+};
+
+export const disableTwoFactor = async (password: string) => {
+    try {
+        const response = await axios.post(API.USER.TWO_FACTOR_DISABLE, { password });
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to disable two-factor authentication"));
+    }
+};
