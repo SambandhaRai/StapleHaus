@@ -43,6 +43,10 @@ export function LoginForm() {
             return;
         }
         const res = await handleLogin({ ...values, captchaToken });
+        if (res.success && res.twoFactorRequired) {
+            router.push("/login/2fa");
+            return;
+        }
         if (res.success) {
             toast.success("Welcome back!");
             router.push(res.data?.role === "admin" ? "/admin" : "/");

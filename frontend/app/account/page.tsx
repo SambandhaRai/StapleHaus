@@ -2,11 +2,14 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthToken } from "@/lib/cookie";
 import { LogoutButton } from "@/app/_components/logout-button";
+import { TwoFactorManager } from "./_components/two-factor-manager";
 import { handleGetProfile } from "@/lib/actions/users-action";
 
-const extractUser = (res: unknown): { name?: string; email?: string } | null => {
+type ProfileUser = { name?: string; email?: string; twoFactorEnabled?: boolean };
+
+const extractUser = (res: unknown): ProfileUser | null => {
     if (res && typeof res === "object" && "success" in res) {
-        const result = res as { success?: boolean; data?: { name?: string; email?: string } };
+        const result = res as { success?: boolean; data?: ProfileUser };
         if (result.success && result.data) return result.data;
     }
     return null;
@@ -67,6 +70,11 @@ export default async function AccountPage() {
                         <h2 className="h4 mb-1">Wishlist</h2>
                         <p className="body-sm text-muted">Pieces you&apos;ve saved for later.</p>
                     </Link>
+                </div>
+
+                <div className="mt-12 border-t border-border pt-8">
+                    <p className="eyebrow mb-4">Security</p>
+                    <TwoFactorManager initialEnabled={Boolean(user.twoFactorEnabled)} />
                 </div>
 
                 <div className="mt-12 border-t border-border pt-8">
