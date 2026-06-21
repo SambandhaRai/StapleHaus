@@ -16,7 +16,7 @@ export async function connectDatabase(
     } catch (error) {
         console.log("Database error: ", error);
         if (exitOnError) {
-            process.exit(1); // exit application on exception
+            process.exit(1);
         }
         throw error;
     }
