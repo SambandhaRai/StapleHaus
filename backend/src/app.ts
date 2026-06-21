@@ -29,9 +29,9 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 const allowedOrigins = [
     FRONTEND_URL,
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3000",
+    "https://localhost:3000",
+    "https://localhost:3001",
+    "https://127.0.0.1:3000",
 ].filter(Boolean);
 
 const unsafeMethods = new Set(["POST", "PUT", "PATCH", "DELETE"]);

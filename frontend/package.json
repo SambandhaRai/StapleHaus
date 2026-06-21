@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --experimental-https --experimental-https-key ../backend/certs/localhost-key.pem --experimental-https-cert ../backend/certs/localhost.pem",
+    "dev": "next dev --experimental-https --experimental-https-key ../backend/certs/localhost-key.pem --experimental-https-cert ../backend/certs/localhost.pem --experimental-https-ca \"$(mkcert -CAROOT)/rootCA.pem\"",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
