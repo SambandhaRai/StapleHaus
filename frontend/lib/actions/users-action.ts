@@ -1,6 +1,6 @@
 "use server";
 
-import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, type AddressPayload } from "../api/users";
+import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, getSessions, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
 import { setUserData } from "../cookie";
 
 const getActionErrorMessage = (err: unknown, fallback: string) => {
@@ -85,6 +85,52 @@ export const handleDisableTwoFactor = async (password: string) => {
         return {
             success: false,
             message: getActionErrorMessage(err, "Failed to disable two-factor authentication"),
+        };
+    }
+};
+
+export const handleGetSessions = async () => {
+    try {
+        const result = await getSessions();
+        return {
+            success: Boolean(result.success),
+            data: result.data,
+            message: result.message,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to load sessions"),
+        };
+    }
+};
+
+export const handleRevokeSession = async (sessionId: string) => {
+    try {
+        const result = await revokeSession(sessionId);
+        return {
+            success: Boolean(result.success),
+            message: result.message,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to sign out session"),
+        };
+    }
+};
+
+export const handleRevokeOtherSessions = async () => {
+    try {
+        const result = await revokeOtherSessions();
+        return {
+            success: Boolean(result.success),
+            message: result.message,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to sign out other sessions"),
         };
     }
 };

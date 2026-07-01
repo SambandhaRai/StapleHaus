@@ -17,6 +17,8 @@ export const API = {
         TWO_FACTOR_SETUP: "/api/users/me/2fa/setup",
         TWO_FACTOR_ENABLE: "/api/users/me/2fa/enable",
         TWO_FACTOR_DISABLE: "/api/users/me/2fa/disable",
+        SESSIONS: "/api/users/me/sessions",
+        REVOKE_SESSION: (sessionId: string) => `/api/users/me/sessions/${sessionId}`,
     },
     PRODUCT: {
         GET_ALL: (

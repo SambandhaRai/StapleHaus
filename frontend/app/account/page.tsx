@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { getAuthToken } from "@/lib/cookie";
 import { LogoutButton } from "@/app/_components/logout-button";
 import { TwoFactorManager } from "./_components/two-factor-manager";
-import { handleGetProfile } from "@/lib/actions/users-action";
+import { SessionsManager } from "./_components/sessions-manager";
+import { handleGetProfile, handleGetSessions } from "@/lib/actions/users-action";
 
 type ProfileUser = { name?: string; email?: string; twoFactorEnabled?: boolean };
 
@@ -25,6 +26,9 @@ export default async function AccountPage() {
     if (!user) {
         redirect("/login");
     }
+
+    const sessionsResult = await handleGetSessions();
+    const sessions = sessionsResult.success && Array.isArray(sessionsResult.data) ? sessionsResult.data : [];
 
     return (
         <main className="flex flex-1 flex-col bg-background text-foreground">
@@ -74,7 +78,10 @@ export default async function AccountPage() {
 
                 <div className="mt-12 border-t border-border pt-8">
                     <p className="eyebrow mb-4">Security</p>
-                    <TwoFactorManager initialEnabled={Boolean(user.twoFactorEnabled)} />
+                    <div className="space-y-4">
+                        <TwoFactorManager initialEnabled={Boolean(user.twoFactorEnabled)} />
+                        <SessionsManager initialSessions={sessions} />
+                    </div>
                 </div>
 
                 <div className="mt-12 border-t border-border pt-8">
