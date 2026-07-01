@@ -1,10 +1,13 @@
 import { handleControllerError } from "../errors/handle-controller-error";
 import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
+import { ActivityLogService } from "../services/activity-log.service";
+import { getRequestContext } from "../utils/request-context";
 import { Request, Response } from "express";
 import z from "zod";
 
 let userService = new UserService();
+let activityLogService = new ActivityLogService();
 
 export class AuthController {
 
@@ -17,7 +20,7 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { user } = await userService.registerUser(parsedData.data);
+            const { user } = await userService.registerUser(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data: user,
@@ -37,7 +40,7 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const result = await userService.loginUser(parsedData.data);
+            const result = await userService.loginUser(parsedData.data, getRequestContext(req));
             if (result.twoFactorRequired) {
                 return res.status(200).json({
                     success: true,
@@ -66,7 +69,7 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { token, user } = await userService.loginWithTwoFactor(parsedData.data);
+            const { token, user } = await userService.loginWithTwoFactor(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data: user,
@@ -87,7 +90,7 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { token, user } = await userService.verifyOtp(parsedData.data);
+            const { token, user } = await userService.verifyOtp(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data: user,
@@ -108,7 +111,7 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            await userService.resendOtp(parsedData.data);
+            await userService.resendOtp(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 message: "If this email needs verification, a new code will be sent"
@@ -133,7 +136,7 @@ export class AuthController {
                     message: "Missing Google sign-in nonce"
                 });
             }
-            const { token, user } = await userService.loginWithGoogle(credential, nonce);
+            const { token, user } = await userService.loginWithGoogle(credential, nonce, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data: user,
@@ -145,7 +148,16 @@ export class AuthController {
         }
     }
 
-    async logout(_req: Request, res: Response) {
+    async logout(req: Request, res: Response) {
+        if (req.user) {
+            await activityLogService.record({
+                ...getRequestContext(req),
+                action: "logout",
+                status: "success",
+                userId: req.user.id,
+                email: req.user.email,
+            });
+        }
         return res.status(200).json({
             success: true,
             message: "Logged out successfully"

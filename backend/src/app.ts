@@ -20,6 +20,7 @@ import wishlistRoutes from "./routes/wishlist.routes";
 import orderRoutes from "./routes/order.routes";
 import reviewRoutes from "./routes/review.routes";
 import discountRoutes from "./routes/discount.routes";
+import activityRoutes from "./routes/activity.routes";
 
 const app: Application = express();
 
@@ -91,6 +92,7 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api", orderRoutes);
 app.use("/api", reviewRoutes);
 app.use("/api", discountRoutes);
+app.use("/api", activityRoutes);
 
 app.use((error: Error, _req: Request, res: Response, next: NextFunction) => {
     if (error instanceof multer.MulterError) {

@@ -9,6 +9,7 @@ import {
     twoFactorLimiter,
 } from "../middlewares/rate-limit.middleware";
 import { verifyCaptcha } from "../middlewares/captcha.middleware";
+import { authorizedMiddleware } from "../middlewares/authorization.middleware";
 
 const router = Router();
 const authController = new AuthController();
@@ -19,6 +20,6 @@ router.post("/resend-otp", resendOtpLimiter, verifyCaptcha, authController.resen
 router.post("/login", loginLimiter, verifyCaptcha, authController.login);
 router.post("/login/2fa", twoFactorLimiter, authController.loginTwoFactor);
 router.post("/google", googleLimiter, authController.googleLogin);
-router.post("/logout", authController.logout);
+router.post("/logout", authorizedMiddleware, authController.logout);
 
 export default router;

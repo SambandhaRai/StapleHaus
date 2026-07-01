@@ -1,6 +1,7 @@
 import { handleControllerError } from "../errors/handle-controller-error";
 import { UpdateUserDto, CreateAddressDto, UpdateAddressDto, EnableTwoFactorDto, DisableTwoFactorDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
+import { getRequestContext } from "../utils/request-context";
 import { Request, Response } from "express";
 import z from "zod";
 
@@ -146,7 +147,7 @@ export class UserController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const data = await userService.enableTwoFactor(userId, parsedData.data.token);
+            const data = await userService.enableTwoFactor(userId, parsedData.data.token, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data,
@@ -170,7 +171,7 @@ export class UserController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            await userService.disableTwoFactor(userId, parsedData.data.password);
+            await userService.disableTwoFactor(userId, parsedData.data.password, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 message: "Two-factor authentication disabled"
