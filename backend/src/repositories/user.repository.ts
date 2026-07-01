@@ -31,6 +31,10 @@ export interface IUserRepository {
     disableTwoFactor(userId: string): Promise<IUser | null>;
     removeBackupCode(userId: string, codeHash: string): Promise<IUser | null>;
 
+    incrementFailedLoginAttempts(userId: string): Promise<IUser | null>;
+    lockAccount(userId: string, lockUntil: Date): Promise<IUser | null>;
+    resetFailedLoginAttempts(userId: string): Promise<IUser | null>;
+
     addAddress(userId: string, address: AddressType): Promise<IUser | null>;
     updateAddress(userId: string, addressId: string, patch: Partial<AddressType>): Promise<IUser | null>;
     removeAddress(userId: string, addressId: string): Promise<IUser | null>;
@@ -122,6 +126,30 @@ export class UserRepository implements IUserRepository {
         return await UserModel.findByIdAndUpdate(
             userId,
             { $pull: { twoFactorBackupCodes: codeHash } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async incrementFailedLoginAttempts(userId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { $inc: { failedLoginAttempts: 1 } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async lockAccount(userId: string, lockUntil: Date): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { lockUntil, failedLoginAttempts: 0 },
+            { returnDocument: "after" }
+        );
+    }
+
+    async resetFailedLoginAttempts(userId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { failedLoginAttempts: 0, $unset: { lockUntil: "" } },
             { returnDocument: "after" }
         );
     }

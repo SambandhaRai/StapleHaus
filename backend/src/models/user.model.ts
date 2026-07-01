@@ -26,6 +26,8 @@ const UserSchema: Schema = new Schema({
     twoFactorSecret: { type: String },
     twoFactorPendingSecret: { type: String },
     twoFactorBackupCodes: { type: [String], default: undefined },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
 }, { timestamps: true });
 
 UserSchema.set("toJSON", {
@@ -37,6 +39,8 @@ UserSchema.set("toJSON", {
         delete serialized.twoFactorSecret;
         delete serialized.twoFactorPendingSecret;
         delete serialized.twoFactorBackupCodes;
+        delete serialized.failedLoginAttempts;
+        delete serialized.lockUntil;
         delete serialized.__v;
         return ret;
     },
@@ -61,6 +65,8 @@ export interface IUser extends Document {
     twoFactorSecret?: string;
     twoFactorPendingSecret?: string;
     twoFactorBackupCodes?: string[];
+    failedLoginAttempts: number;
+    lockUntil?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

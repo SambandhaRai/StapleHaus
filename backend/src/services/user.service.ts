@@ -5,6 +5,8 @@ import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID } from "../config";
 import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
 import { sendOtpEmail } from "../config/email";
 import { encryptSecret, decryptSecret } from "../utils/crypto";
+import { ActivityLogService } from "./activity-log.service";
+import { RequestContext } from "../types/activity-log.type";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -13,6 +15,9 @@ import { OAuth2Client } from "google-auth-library";
 import * as OTPAuth from "otpauth";
 
 const TWO_FACTOR_ISSUER = "StapleHaus";
+
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const ACCOUNT_LOCK_MS = 15 * 60 * 1000;
 
 const createTotp = (base32Secret: string, label?: string) =>
     new OTPAuth.TOTP({
@@ -25,6 +30,7 @@ const createTotp = (base32Secret: string, label?: string) =>
     });
 
 let userRepository = new UserRepository();
+let activityLogService = new ActivityLogService();
 let googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const isDuplicateKeyError = (error: unknown) =>
@@ -84,7 +90,7 @@ export class UserService {
         await sendOtpEmail(user.email, otp);
     }
 
-    async registerUser(data: RegisterUserDto) {
+    async registerUser(data: RegisterUserDto, context: RequestContext = {}) {
         const existingUser = await userRepository.getUserByEmail(data.email);
         if (existingUser) {
             if (existingUser.isEmailVerified === false) {
@@ -116,10 +122,18 @@ export class UserService {
             throw error;
         }
 
+        await activityLogService.record({
+            ...context,
+            action: "register",
+            status: "success",
+            userId: newUser._id.toString(),
+            email: newUser.email,
+        });
+
         return { user: newUser };
     }
 
-    async verifyOtp(data: VerifyOtpDto) {
+    async verifyOtp(data: VerifyOtpDto, context: RequestContext = {}) {
         const user = await userRepository.getUserByEmail(data.email);
         if (!user) {
             throw new HttpError(404, "Account not found");
@@ -144,12 +158,20 @@ export class UserService {
             throw new HttpError(500, "Unable to verify email");
         }
 
+        await activityLogService.record({
+            ...context,
+            action: "otp_verify",
+            status: "success",
+            userId: verifiedUser._id.toString(),
+            email: verifiedUser.email,
+        });
+
         const token = this.createAuthToken(verifiedUser);
 
         return { token, user: verifiedUser };
     }
 
-    async resendOtp(data: ResendOtpDto) {
+    async resendOtp(data: ResendOtpDto, context: RequestContext = {}) {
         const user = await userRepository.getUserByEmail(data.email);
         if (!user || user.isEmailVerified) {
             return true;
@@ -157,34 +179,111 @@ export class UserService {
 
         await this.issueOtp(user);
 
+        await activityLogService.record({
+            ...context,
+            action: "otp_resend",
+            status: "success",
+            userId: user._id.toString(),
+            email: user.email,
+        });
+
         return true;
     }
 
-    async loginUser(data: LoginUserDto) {
+    async loginUser(data: LoginUserDto, context: RequestContext = {}) {
         const existingUser = await userRepository.getUserByEmail(data.email);
         if (!existingUser || !existingUser.password) {
+            await activityLogService.record({
+                ...context,
+                action: "login_failed",
+                status: "failure",
+                email: data.email,
+                reason: "unknown_account",
+            });
             throw new HttpError(401, "Invalid email or password");
+        }
+
+        const userId = existingUser._id.toString();
+
+        if (existingUser.lockUntil && existingUser.lockUntil.getTime() > Date.now()) {
+            await activityLogService.record({
+                ...context,
+                action: "account_locked",
+                status: "failure",
+                userId,
+                email: existingUser.email,
+                reason: "locked",
+            });
+            throw new HttpError(429, "Account locked due to too many failed attempts. Please try again later.");
         }
 
         const isPasswordMatch = await bcryptjs.compare(data.password, existingUser.password);
         if (!isPasswordMatch) {
+            const updated = await userRepository.incrementFailedLoginAttempts(userId);
+            if (updated && updated.failedLoginAttempts >= MAX_FAILED_LOGIN_ATTEMPTS) {
+                await userRepository.lockAccount(userId, new Date(Date.now() + ACCOUNT_LOCK_MS));
+                await activityLogService.record({
+                    ...context,
+                    action: "account_locked",
+                    status: "failure",
+                    userId,
+                    email: existingUser.email,
+                    reason: "too_many_attempts",
+                });
+            } else {
+                await activityLogService.record({
+                    ...context,
+                    action: "login_failed",
+                    status: "failure",
+                    userId,
+                    email: existingUser.email,
+                    reason: "bad_password",
+                });
+            }
             throw new HttpError(401, "Invalid email or password");
         }
 
         if (existingUser.isEmailVerified === false) {
+            await activityLogService.record({
+                ...context,
+                action: "login_failed",
+                status: "failure",
+                userId,
+                email: existingUser.email,
+                reason: "email_unverified",
+            });
             throw new HttpError(401, "Invalid email or password");
         }
 
+        if (existingUser.failedLoginAttempts > 0 || existingUser.lockUntil) {
+            await userRepository.resetFailedLoginAttempts(userId);
+        }
+
         if (existingUser.twoFactorEnabled) {
+            await activityLogService.record({
+                ...context,
+                action: "twofa_challenge",
+                status: "success",
+                userId,
+                email: existingUser.email,
+            });
             return { twoFactorRequired: true as const, challengeToken: this.createChallengeToken(existingUser) };
         }
+
+        await activityLogService.record({
+            ...context,
+            action: "login",
+            status: "success",
+            userId,
+            email: existingUser.email,
+        });
 
         const token = this.createAuthToken(existingUser);
 
         return { twoFactorRequired: false as const, token, user: existingUser };
     }
 
-    async loginWithTwoFactor(data: LoginTwoFactorDto) {
+    async loginWithTwoFactor(data: LoginTwoFactorDto, context: RequestContext = {}) {
         let payload: { id?: string; purpose?: string };
         try {
             payload = jwt.verify(data.challengeToken, JWT_SECRET) as { id?: string; purpose?: string };
@@ -204,8 +303,25 @@ export class UserService {
         const verified = this.verifyTotp(user.twoFactorSecret, data.code)
             || await this.consumeBackupCode(user, data.code);
         if (!verified) {
+            await activityLogService.record({
+                ...context,
+                action: "login_failed",
+                status: "failure",
+                userId: user._id.toString(),
+                email: user.email,
+                reason: "bad_2fa_code",
+            });
             throw new HttpError(401, "Invalid authentication code");
         }
+
+        await activityLogService.record({
+            ...context,
+            action: "login",
+            status: "success",
+            userId: user._id.toString(),
+            email: user.email,
+            reason: "two_factor",
+        });
 
         const token = this.createAuthToken(user);
 
@@ -228,7 +344,7 @@ export class UserService {
         return { otpauthUri: totp.toString(), secret: secret.base32 };
     }
 
-    async enableTwoFactor(userId: string, code: string) {
+    async enableTwoFactor(userId: string, code: string, context: RequestContext = {}) {
         const user = await userRepository.getUserById(userId);
         if (!user) {
             throw new HttpError(404, "Account not found");
@@ -247,10 +363,18 @@ export class UserService {
         const backupCodeHashes = await Promise.all(backupCodes.map((c) => bcryptjs.hash(c, 10)));
         await userRepository.activateTwoFactor(userId, user.twoFactorPendingSecret, backupCodeHashes);
 
+        await activityLogService.record({
+            ...context,
+            action: "twofa_enable",
+            status: "success",
+            userId,
+            email: user.email,
+        });
+
         return { backupCodes };
     }
 
-    async disableTwoFactor(userId: string, password: string) {
+    async disableTwoFactor(userId: string, password: string, context: RequestContext = {}) {
         const user = await userRepository.getUserById(userId);
         if (!user) {
             throw new HttpError(404, "Account not found");
@@ -259,10 +383,26 @@ export class UserService {
             throw new HttpError(400, "Two-factor authentication is not enabled");
         }
         if (!user.password || !(await bcryptjs.compare(password, user.password))) {
+            await activityLogService.record({
+                ...context,
+                action: "twofa_disable",
+                status: "failure",
+                userId,
+                email: user.email,
+                reason: "bad_password",
+            });
             throw new HttpError(401, "Incorrect password");
         }
 
         await userRepository.disableTwoFactor(userId);
+
+        await activityLogService.record({
+            ...context,
+            action: "twofa_disable",
+            status: "success",
+            userId,
+            email: user.email,
+        });
 
         return true;
     }
@@ -296,7 +436,7 @@ export class UserService {
         return { email: payload.email, name: payload.name, googleId: payload.sub };
     }
 
-    async loginWithGoogle(idToken: string, expectedNonce: string) {
+    async loginWithGoogle(idToken: string, expectedNonce: string, context: RequestContext = {}) {
         const profile = await this.verifyGoogleToken(idToken, expectedNonce);
 
         let user = await userRepository.getUserByGoogleId(profile.googleId);
@@ -329,6 +469,14 @@ export class UserService {
         if (!user) {
             throw new HttpError(500, "Unable to sign in with Google");
         }
+
+        await activityLogService.record({
+            ...context,
+            action: "google_login",
+            status: "success",
+            userId: user._id.toString(),
+            email: user.email,
+        });
 
         const token = this.createAuthToken(user);
 
