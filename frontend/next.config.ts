@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const apiOrigin = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5050";
+const apiOrigin = process.env.NEXT_PUBLIC_API_BASE_URL || "https://localhost:5050";
 const isDev = process.env.NODE_ENV !== "production";
 
 const contentSecurityPolicy = [
@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
       {
         hostname: "localhost",
         port: "5050",
-        protocol: "http",
+        protocol: "https",
         pathname: "/uploads/**",
       },
     ],
