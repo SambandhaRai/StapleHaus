@@ -2,12 +2,14 @@ import { handleControllerError } from "../errors/handle-controller-error";
 import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { ActivityLogService } from "../services/activity-log.service";
+import { SessionService } from "../services/session.service";
 import { getRequestContext } from "../utils/request-context";
 import { Request, Response } from "express";
 import z from "zod";
 
 let userService = new UserService();
 let activityLogService = new ActivityLogService();
+let sessionService = new SessionService();
 
 export class AuthController {
 
@@ -150,6 +152,9 @@ export class AuthController {
 
     async logout(req: Request, res: Response) {
         if (req.user) {
+            if (req.user.sessionId) {
+                await sessionService.revokeSession(req.user.sessionId);
+            }
             await activityLogService.record({
                 ...getRequestContext(req),
                 action: "logout",

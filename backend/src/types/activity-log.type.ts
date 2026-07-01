@@ -22,6 +22,7 @@ export type ActivityStatusType = z.infer<typeof ActivityStatusEnum>;
 export type RequestContext = {
     ip?: string;
     userAgent?: string;
+    sessionId?: string;
 };
 
 export type ActivityEvent = RequestContext & {

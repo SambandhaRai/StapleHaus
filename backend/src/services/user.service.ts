@@ -6,6 +6,7 @@ import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateA
 import { sendOtpEmail } from "../config/email";
 import { encryptSecret, decryptSecret } from "../utils/crypto";
 import { ActivityLogService } from "./activity-log.service";
+import { SessionService } from "./session.service";
 import { RequestContext } from "../types/activity-log.type";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
@@ -31,6 +32,7 @@ const createTotp = (base32Secret: string, label?: string) =>
 
 let userRepository = new UserRepository();
 let activityLogService = new ActivityLogService();
+let sessionService = new SessionService();
 let googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const isDuplicateKeyError = (error: unknown) =>
@@ -41,14 +43,18 @@ const isDuplicateKeyError = (error: unknown) =>
 
 export class UserService {
 
-    private createAuthToken(user: IUser): string {
+    private async createAuthToken(user: IUser, context: RequestContext): Promise<string> {
+        const session = await sessionService.createSession(user._id.toString(), context);
         const payload = {
             id: user._id,
             email: user.email,
             role: user.role,
             purpose: "session",
         };
-        const options: SignOptions = { expiresIn: JWT_EXPIRES_IN as SignOptions["expiresIn"] };
+        const options: SignOptions = {
+            expiresIn: JWT_EXPIRES_IN as SignOptions["expiresIn"],
+            jwtid: session._id.toString(),
+        };
         return jwt.sign(payload, JWT_SECRET, options);
     }
 
@@ -166,7 +172,7 @@ export class UserService {
             email: verifiedUser.email,
         });
 
-        const token = this.createAuthToken(verifiedUser);
+        const token = await this.createAuthToken(verifiedUser, context);
 
         return { token, user: verifiedUser };
     }
@@ -278,7 +284,7 @@ export class UserService {
             email: existingUser.email,
         });
 
-        const token = this.createAuthToken(existingUser);
+        const token = await this.createAuthToken(existingUser, context);
 
         return { twoFactorRequired: false as const, token, user: existingUser };
     }
@@ -323,7 +329,7 @@ export class UserService {
             reason: "two_factor",
         });
 
-        const token = this.createAuthToken(user);
+        const token = await this.createAuthToken(user, context);
 
         return { token, user };
     }
@@ -362,6 +368,7 @@ export class UserService {
         const backupCodes = this.generateBackupCodes();
         const backupCodeHashes = await Promise.all(backupCodes.map((c) => bcryptjs.hash(c, 10)));
         await userRepository.activateTwoFactor(userId, user.twoFactorPendingSecret, backupCodeHashes);
+        await sessionService.revokeOtherSessions(userId, context.sessionId);
 
         await activityLogService.record({
             ...context,
@@ -395,6 +402,7 @@ export class UserService {
         }
 
         await userRepository.disableTwoFactor(userId);
+        await sessionService.revokeOtherSessions(userId, context.sessionId);
 
         await activityLogService.record({
             ...context,
@@ -478,7 +486,7 @@ export class UserService {
             email: user.email,
         });
 
-        const token = this.createAuthToken(user);
+        const token = await this.createAuthToken(user, context);
 
         return { token, user };
     }
