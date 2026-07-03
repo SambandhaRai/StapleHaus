@@ -67,6 +67,15 @@ export const disableTwoFactor = async (password: string) => {
     }
 };
 
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+        const response = await axios.post(API.USER.CHANGE_PASSWORD, { currentPassword, newPassword });
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to change password"));
+    }
+};
+
 export const getSessions = async () => {
     try {
         const response = await axios.get(API.USER.SESSIONS);

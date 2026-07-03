@@ -46,6 +46,12 @@ export const UpdateUserDto = z.object({
 });
 export type UpdateUserDto = z.infer<typeof UpdateUserDto>;
 
+export const ChangePasswordDto = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: BaseUserSchema.shape.password,
+});
+export type ChangePasswordDto = z.infer<typeof ChangePasswordDto>;
+
 export const CreateAddressDto = AddressSchema;
 export type CreateAddressDto = z.infer<typeof CreateAddressDto>;
 

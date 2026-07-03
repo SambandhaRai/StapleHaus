@@ -11,6 +11,7 @@ export const API = {
     USER: {
         GET_PROFILE: "/api/users/me",
         UPDATE_PROFILE: "/api/users/me",
+        CHANGE_PASSWORD: "/api/users/me/password",
         ADD_ADDRESS: "/api/users/me/addresses",
         UPDATE_ADDRESS: (addressId: string) => `/api/users/me/addresses/${addressId}`,
         DELETE_ADDRESS: (addressId: string) => `/api/users/me/addresses/${addressId}`,

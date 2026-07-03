@@ -9,6 +9,7 @@ const sessionController = new SessionController();
 
 router.get("/me", authorizedMiddleware, userController.getProfile);
 router.patch("/me", authorizedMiddleware, userController.updateProfile);
+router.post("/me/password", authorizedMiddleware, userController.changePassword);
 
 router.post("/me/addresses", authorizedMiddleware, userController.addAddress);
 router.patch("/me/addresses/:addressId", authorizedMiddleware, userController.updateAddress);

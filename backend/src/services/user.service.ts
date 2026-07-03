@@ -2,7 +2,7 @@ import { UserRepository } from "../repositories/user.repository";
 import { IUser } from "../models/user.model";
 import { HttpError } from "../errors/http-error";
 import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID } from "../config";
-import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangePasswordDto } from "../dtos/user.dto";
 import { sendOtpEmail } from "../config/email";
 import { encryptSecret, decryptSecret } from "../utils/crypto";
 import { ActivityLogService } from "./activity-log.service";
@@ -19,6 +19,7 @@ const TWO_FACTOR_ISSUER = "StapleHaus";
 
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const ACCOUNT_LOCK_MS = 15 * 60 * 1000;
+const PASSWORD_HISTORY_LIMIT = 5;
 
 const createTotp = (base32Secret: string, label?: string) =>
     new OTPAuth.TOTP({
@@ -113,6 +114,7 @@ export class UserService {
                 name: data.name,
                 email: data.email,
                 password,
+                passwordChangedAt: new Date(),
             });
         } catch (error: unknown) {
             if (isDuplicateKeyError(error)) {
@@ -505,6 +507,51 @@ export class UserService {
             throw new HttpError(404, "User not found");
         }
         return updatedUser;
+    }
+
+    async changePassword(userId: string, data: ChangePasswordDto, context: RequestContext = {}) {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpError(404, "User not found");
+        }
+        if (!user.password) {
+            throw new HttpError(400, "Password change is not available for this account");
+        }
+
+        if (!(await bcryptjs.compare(data.currentPassword, user.password))) {
+            await activityLogService.record({
+                ...context,
+                action: "password_change",
+                status: "failure",
+                userId,
+                email: user.email,
+                reason: "bad_current_password",
+            });
+            throw new HttpError(401, "Current password is incorrect");
+        }
+
+        const previousHashes = [user.password, ...(user.passwordHistory ?? [])];
+        for (const hash of previousHashes) {
+            if (await bcryptjs.compare(data.newPassword, hash)) {
+                throw new HttpError(400, "You cannot reuse a recent password. Please choose a different one.");
+            }
+        }
+
+        const newHash = await bcryptjs.hash(data.newPassword, 10);
+        const nextHistory = [user.password, ...(user.passwordHistory ?? [])].slice(0, PASSWORD_HISTORY_LIMIT);
+        await userRepository.updatePassword(userId, newHash, nextHistory, new Date());
+
+        await sessionService.revokeOtherSessions(userId, context.sessionId);
+
+        await activityLogService.record({
+            ...context,
+            action: "password_change",
+            status: "success",
+            userId,
+            email: user.email,
+        });
+
+        return true;
     }
 
     async addAddress(userId: string, address: CreateAddressDto) {

@@ -12,6 +12,7 @@ export const ActivityActionEnum = z.enum([
     "twofa_disable",
     "google_login",
     "logout",
+    "password_change",
 ]);
 
 export const ActivityStatusEnum = z.enum(["success", "failure"]);

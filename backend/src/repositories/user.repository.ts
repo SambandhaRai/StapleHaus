@@ -8,6 +8,7 @@ type CreateUserData = {
     googleId?: string;
     role?: UserRoleType;
     isEmailVerified?: boolean;
+    passwordChangedAt?: Date;
 };
 
 type UpdateUserData = {
@@ -34,6 +35,7 @@ export interface IUserRepository {
     incrementFailedLoginAttempts(userId: string): Promise<IUser | null>;
     lockAccount(userId: string, lockUntil: Date): Promise<IUser | null>;
     resetFailedLoginAttempts(userId: string): Promise<IUser | null>;
+    updatePassword(userId: string, passwordHash: string, passwordHistory: string[], passwordChangedAt: Date): Promise<IUser | null>;
 
     addAddress(userId: string, address: AddressType): Promise<IUser | null>;
     updateAddress(userId: string, addressId: string, patch: Partial<AddressType>): Promise<IUser | null>;
@@ -150,6 +152,14 @@ export class UserRepository implements IUserRepository {
         return await UserModel.findByIdAndUpdate(
             userId,
             { failedLoginAttempts: 0, $unset: { lockUntil: "" } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async updatePassword(userId: string, passwordHash: string, passwordHistory: string[], passwordChangedAt: Date): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { password: passwordHash, passwordHistory, passwordChangedAt },
             { returnDocument: "after" }
         );
     }

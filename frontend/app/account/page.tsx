@@ -4,9 +4,10 @@ import { getAuthToken } from "@/lib/cookie";
 import { LogoutButton } from "@/app/_components/logout-button";
 import { TwoFactorManager } from "./_components/two-factor-manager";
 import { SessionsManager } from "./_components/sessions-manager";
+import { ChangePasswordManager } from "./_components/change-password-manager";
 import { handleGetProfile, handleGetSessions } from "@/lib/actions/users-action";
 
-type ProfileUser = { name?: string; email?: string; twoFactorEnabled?: boolean };
+type ProfileUser = { name?: string; email?: string; twoFactorEnabled?: boolean; hasPassword?: boolean };
 
 const extractUser = (res: unknown): ProfileUser | null => {
     if (res && typeof res === "object" && "success" in res) {
@@ -80,6 +81,7 @@ export default async function AccountPage() {
                     <p className="eyebrow mb-4">Security</p>
                     <div className="space-y-4">
                         <TwoFactorManager initialEnabled={Boolean(user.twoFactorEnabled)} />
+                        {user.hasPassword && <ChangePasswordManager />}
                         <SessionsManager initialSessions={sessions} />
                     </div>
                 </div>

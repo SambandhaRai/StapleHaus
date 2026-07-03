@@ -1,6 +1,6 @@
 "use server";
 
-import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, getSessions, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
+import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, changePassword, getSessions, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
 import { setUserData } from "../cookie";
 
 const getActionErrorMessage = (err: unknown, fallback: string) => {
@@ -85,6 +85,21 @@ export const handleDisableTwoFactor = async (password: string) => {
         return {
             success: false,
             message: getActionErrorMessage(err, "Failed to disable two-factor authentication"),
+        };
+    }
+};
+
+export const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+        const result = await changePassword(currentPassword, newPassword);
+        return {
+            success: Boolean(result.success),
+            message: result.message,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to change password"),
         };
     }
 };
