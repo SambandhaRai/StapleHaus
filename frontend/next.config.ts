@@ -27,7 +27,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  allowedDevOrigins: ["192.168.1.*", "localhost", "10.1.19.*"],
+  allowedDevOrigins: ["192.168.1.*", "192.168.239.*", "localhost", "10.1.19.*"],
   experimental: {
     serverActions: {
       bodySizeLimit: "8mb",

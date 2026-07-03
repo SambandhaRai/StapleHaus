@@ -19,12 +19,12 @@ axiosInstance.interceptors.request.use(
         try {
             const requestHeaders = await headers();
             const userAgent = requestHeaders.get("user-agent");
-            const forwardedFor = requestHeaders.get("x-forwarded-for") ?? requestHeaders.get("x-real-ip");
+            const clientIp = requestHeaders.get("x-forwarded-for") ?? requestHeaders.get("x-real-ip");
             if (userAgent && config.headers) {
                 config.headers["x-client-user-agent"] = userAgent;
             }
-            if (forwardedFor && config.headers) {
-                config.headers["x-forwarded-for"] = forwardedFor;
+            if (clientIp && config.headers) {
+                config.headers["x-client-ip"] = clientIp;
             }
         } catch {
         }

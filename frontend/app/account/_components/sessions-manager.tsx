@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Button } from "@/app/_components/button";
 import { handleGetSessions, handleRevokeSession, handleRevokeOtherSessions } from "@/lib/actions/users-action";
@@ -48,6 +48,11 @@ export function SessionsManager({ initialSessions }: SessionsManagerProps) {
     const [sessions, setSessions] = useState<Session[]>(initialSessions);
     const [busyId, setBusyId] = useState<string | null>(null);
     const [busyAll, setBusyAll] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const refresh = async () => {
         const res = await handleGetSessions();
@@ -111,7 +116,7 @@ export function SessionsManager({ initialSessions }: SessionsManagerProps) {
                                 )}
                             </p>
                             <p className="body-sm text-muted">
-                                {session.ip ? `${session.ip} · ` : ""}Last active {formatWhen(session.lastUsedAt)}
+                                {session.ip ? `${session.ip} · ` : ""}Last active {mounted ? formatWhen(session.lastUsedAt) : "…"}
                             </p>
                         </div>
                         {!session.current && (
