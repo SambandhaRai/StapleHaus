@@ -9,6 +9,7 @@ declare global {
                 role: UserRoleType;
                 sessionId?: string;
             };
+            ipAllowlisted?: boolean;
         }
     }
 }

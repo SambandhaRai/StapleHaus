@@ -2,6 +2,7 @@ import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { SessionController } from "../controllers/session.controller";
 import { authorizedMiddleware } from "../middlewares/authorization.middleware";
+import { passwordChangeLimiter, twoFactorManageLimiter } from "../middlewares/rate-limit.middleware";
 
 const router = Router();
 const userController = new UserController();
@@ -9,15 +10,15 @@ const sessionController = new SessionController();
 
 router.get("/me", authorizedMiddleware, userController.getProfile);
 router.patch("/me", authorizedMiddleware, userController.updateProfile);
-router.post("/me/password", authorizedMiddleware, userController.changePassword);
+router.post("/me/password", authorizedMiddleware, passwordChangeLimiter, userController.changePassword);
 
 router.post("/me/addresses", authorizedMiddleware, userController.addAddress);
 router.patch("/me/addresses/:addressId", authorizedMiddleware, userController.updateAddress);
 router.delete("/me/addresses/:addressId", authorizedMiddleware, userController.deleteAddress);
 
 router.post("/me/2fa/setup", authorizedMiddleware, userController.setupTwoFactor);
-router.post("/me/2fa/enable", authorizedMiddleware, userController.enableTwoFactor);
-router.post("/me/2fa/disable", authorizedMiddleware, userController.disableTwoFactor);
+router.post("/me/2fa/enable", authorizedMiddleware, twoFactorManageLimiter, userController.enableTwoFactor);
+router.post("/me/2fa/disable", authorizedMiddleware, twoFactorManageLimiter, userController.disableTwoFactor);
 
 router.get("/me/sessions", authorizedMiddleware, sessionController.listSessions);
 router.delete("/me/sessions", authorizedMiddleware, sessionController.revokeOtherSessions);

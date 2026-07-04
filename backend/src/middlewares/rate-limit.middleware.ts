@@ -1,5 +1,6 @@
 import rateLimit, { Options, ipKeyGenerator } from "express-rate-limit";
 import { Request, Response } from "express";
+import { getClientIp } from "../utils/request-context";
 
 const tooManyHandler = (_req: Request, res: Response) => {
     return res.status(429).json({
@@ -8,17 +9,34 @@ const tooManyHandler = (_req: Request, res: Response) => {
     });
 };
 
+const byClientIp = (req: Request) => {
+    const ip = getClientIp(req);
+    return ip ? ipKeyGenerator(ip) : "unknown";
+};
+
 const byEmail = (req: Request) => {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     if (email) return email;
-    return req.ip ? ipKeyGenerator(req.ip) : "unknown";
+    return byClientIp(req);
+};
+
+const byUser = (req: Request) => {
+    return req.user?.id ?? byClientIp(req);
 };
 
 const baseOptions: Partial<Options> = {
     standardHeaders: true,
     legacyHeaders: false,
     handler: tooManyHandler,
+    skip: (req: Request) => req.ipAllowlisted === true,
 };
+
+export const globalLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 600,
+    keyGenerator: byClientIp,
+});
 
 export const loginLimiter = rateLimit({
     ...baseOptions,
@@ -61,4 +79,34 @@ export const twoFactorLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 10,
     skipSuccessfulRequests: true,
+});
+
+export const twoFactorManageLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    keyGenerator: byUser,
+    skipSuccessfulRequests: true,
+});
+
+export const passwordChangeLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    keyGenerator: byUser,
+    skipSuccessfulRequests: true,
+});
+
+export const checkoutLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    keyGenerator: byUser,
+});
+
+export const reviewWriteLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 8,
+    keyGenerator: byUser,
 });
