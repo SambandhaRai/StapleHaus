@@ -81,6 +81,21 @@ export const twoFactorLimiter = rateLimit({
     skipSuccessfulRequests: true,
 });
 
+export const forgotPasswordLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 3,
+    keyGenerator: byEmail,
+});
+
+export const resetPasswordLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 6,
+    keyGenerator: byClientIp,
+    skipSuccessfulRequests: true,
+});
+
 export const twoFactorManageLimiter = rateLimit({
     ...baseOptions,
     windowMs: 15 * 60 * 1000,

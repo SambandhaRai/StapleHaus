@@ -7,6 +7,8 @@ import {
     resendOtpLimiter,
     googleLimiter,
     twoFactorLimiter,
+    forgotPasswordLimiter,
+    resetPasswordLimiter,
 } from "../middlewares/rate-limit.middleware";
 import { verifyCaptcha } from "../middlewares/captcha.middleware";
 import { authorizedMiddleware } from "../middlewares/authorization.middleware";
@@ -19,6 +21,8 @@ router.post("/verify-otp", verifyOtpLimiter, authController.verifyOtp);
 router.post("/resend-otp", resendOtpLimiter, verifyCaptcha, authController.resendOtp);
 router.post("/login", loginLimiter, verifyCaptcha, authController.login);
 router.post("/login/2fa", twoFactorLimiter, authController.loginTwoFactor);
+router.post("/forgot-password", forgotPasswordLimiter, verifyCaptcha, authController.forgotPassword);
+router.post("/reset-password", resetPasswordLimiter, authController.resetPassword);
 router.post("/google", googleLimiter, authController.googleLogin);
 router.post("/logout", authorizedMiddleware, authController.logout);
 

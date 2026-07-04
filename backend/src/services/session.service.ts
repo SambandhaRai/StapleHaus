@@ -20,6 +20,13 @@ export class SessionService {
         });
     }
 
+    async isKnownDevice(userId: string, userAgent?: string): Promise<boolean> {
+        if (!userAgent) {
+            return true;
+        }
+        return await sessionRepository.countSessionsByUserAndAgent(userId, userAgent) > 0;
+    }
+
     async validateSession(sessionId: string | undefined, userId: string, context: RequestContext): Promise<ISession | null> {
         if (!sessionId || !mongoose.Types.ObjectId.isValid(sessionId)) {
             return null;

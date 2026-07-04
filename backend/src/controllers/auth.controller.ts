@@ -1,5 +1,5 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { ActivityLogService } from "../services/activity-log.service";
 import { SessionService } from "../services/session.service";
@@ -144,6 +144,44 @@ export class AuthController {
                 data: user,
                 token,
                 message: "Login successful"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async forgotPassword(req: Request, res: Response) {
+        try {
+            const parsedData = ForgotPasswordDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            await userService.requestPasswordReset(parsedData.data, getRequestContext(req));
+            return res.status(200).json({
+                success: true,
+                message: "If an account exists for that email, a reset link has been sent"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async resetPassword(req: Request, res: Response) {
+        try {
+            const parsedData = ResetPasswordDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            await userService.resetPassword(parsedData.data, getRequestContext(req));
+            return res.status(200).json({
+                success: true,
+                message: "Password reset successfully. You can now sign in with your new password"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);

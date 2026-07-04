@@ -7,6 +7,8 @@ export const API = {
         LOGIN_2FA: "/api/auth/login/2fa",
         GOOGLE: "/api/auth/google",
         LOGOUT: "/api/auth/logout",
+        FORGOT_PASSWORD: "/api/auth/forgot-password",
+        RESET_PASSWORD: "/api/auth/reset-password",
     },
     USER: {
         GET_PROFILE: "/api/users/me",

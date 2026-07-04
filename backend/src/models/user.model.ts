@@ -30,6 +30,8 @@ const UserSchema: Schema = new Schema({
     lockUntil: { type: Date },
     passwordHistory: { type: [String], default: [] },
     passwordChangedAt: { type: Date },
+    passwordResetTokenHash: { type: String },
+    passwordResetExpiresAt: { type: Date },
 }, { timestamps: true });
 
 UserSchema.set("toJSON", {
@@ -45,6 +47,8 @@ UserSchema.set("toJSON", {
         delete serialized.failedLoginAttempts;
         delete serialized.lockUntil;
         delete serialized.passwordHistory;
+        delete serialized.passwordResetTokenHash;
+        delete serialized.passwordResetExpiresAt;
         delete serialized.__v;
         return ret;
     },
@@ -73,6 +77,8 @@ export interface IUser extends Document {
     lockUntil?: Date;
     passwordHistory: string[];
     passwordChangedAt?: Date;
+    passwordResetTokenHash?: string;
+    passwordResetExpiresAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

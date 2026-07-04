@@ -36,6 +36,9 @@ export interface IUserRepository {
     lockAccount(userId: string, lockUntil: Date): Promise<IUser | null>;
     resetFailedLoginAttempts(userId: string): Promise<IUser | null>;
     updatePassword(userId: string, passwordHash: string, passwordHistory: string[], passwordChangedAt: Date): Promise<IUser | null>;
+    setPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date): Promise<IUser | null>;
+    getUserByResetTokenHash(tokenHash: string): Promise<IUser | null>;
+    clearPasswordResetToken(userId: string): Promise<IUser | null>;
 
     addAddress(userId: string, address: AddressType): Promise<IUser | null>;
     updateAddress(userId: string, addressId: string, patch: Partial<AddressType>): Promise<IUser | null>;
@@ -160,6 +163,26 @@ export class UserRepository implements IUserRepository {
         return await UserModel.findByIdAndUpdate(
             userId,
             { password: passwordHash, passwordHistory, passwordChangedAt },
+            { returnDocument: "after" }
+        );
+    }
+
+    async setPasswordResetToken(userId: string, tokenHash: string, expiresAt: Date): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { passwordResetTokenHash: tokenHash, passwordResetExpiresAt: expiresAt },
+            { returnDocument: "after" }
+        );
+    }
+
+    async getUserByResetTokenHash(tokenHash: string): Promise<IUser | null> {
+        return await UserModel.findOne({ passwordResetTokenHash: tokenHash });
+    }
+
+    async clearPasswordResetToken(userId: string): Promise<IUser | null> {
+        return await UserModel.findByIdAndUpdate(
+            userId,
+            { $unset: { passwordResetTokenHash: "", passwordResetExpiresAt: "" } },
             { returnDocument: "after" }
         );
     }

@@ -13,6 +13,8 @@ export const ActivityActionEnum = z.enum([
     "google_login",
     "logout",
     "password_change",
+    "password_reset_request",
+    "password_reset",
     "ip_access_add",
     "ip_access_remove",
 ]);

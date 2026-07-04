@@ -1,9 +1,9 @@
 import { UserRepository } from "../repositories/user.repository";
 import { IUser } from "../models/user.model";
 import { HttpError } from "../errors/http-error";
-import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID } from "../config";
-import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangePasswordDto } from "../dtos/user.dto";
-import { sendOtpEmail } from "../config/email";
+import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID, FRONTEND_URL } from "../config";
+import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
+import { sendEmail } from "../config/email";
 import { encryptSecret, decryptSecret } from "../utils/crypto";
 import { ActivityLogService } from "./activity-log.service";
 import { SessionService } from "./session.service";
@@ -11,7 +11,7 @@ import { RequestContext } from "../types/activity-log.type";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
-import { randomInt, randomBytes } from "crypto";
+import { randomInt, randomBytes, createHash } from "crypto";
 import { OAuth2Client } from "google-auth-library";
 import * as OTPAuth from "otpauth";
 
@@ -20,6 +20,7 @@ const TWO_FACTOR_ISSUER = "StapleHaus";
 const MAX_FAILED_LOGIN_ATTEMPTS = 5;
 const ACCOUNT_LOCK_MS = 15 * 60 * 1000;
 const PASSWORD_HISTORY_LIMIT = 5;
+const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
 
 const createTotp = (base32Secret: string, label?: string) =>
     new OTPAuth.TOTP({
@@ -45,7 +46,11 @@ const isDuplicateKeyError = (error: unknown) =>
 export class UserService {
 
     private async createAuthToken(user: IUser, context: RequestContext): Promise<string> {
+        const knownDevice = await sessionService.isKnownDevice(user._id.toString(), context.userAgent);
         const session = await sessionService.createSession(user._id.toString(), context);
+        if (!knownDevice) {
+            this.sendNewDeviceAlert(user.email, context);
+        }
         const payload = {
             id: user._id,
             email: user.email,
@@ -89,12 +94,107 @@ export class UserService {
         return false;
     }
 
+    private brandedEmailHtml(kicker: string, title: string, body: string) {
+        const font = "Helvetica, Arial, sans-serif";
+        return `
+        <body style="margin:0; padding:0; background-color:#f7f7f5;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f7f5;">
+                <tr>
+                    <td align="center" style="padding:40px 16px;">
+                        <table role="presentation" width="480" cellpadding="0" cellspacing="0" style="width:480px; max-width:100%; background-color:#ffffff; border:1px solid #e4e4e0;">
+                            <tr>
+                                <td style="padding:24px 40px; border-bottom:1px solid #e4e4e0;">
+                                    <span style="font-family:${font}; font-size:18px; font-weight:700; letter-spacing:2px; color:#111111;">STAPLEHAUS</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:40px;">
+                                    <p style="margin:0 0 8px 0; font-family:${font}; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#76766f;">${kicker}</p>
+                                    <h1 style="margin:0 0 16px 0; font-family:${font}; font-size:24px; font-weight:700; color:#111111;">${title}</h1>
+                                    ${body}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding:20px 40px; border-top:1px solid #e4e4e0;">
+                                    <p style="margin:0; font-family:${font}; font-size:12px; color:#a6a6a0;">&copy; StapleHaus</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </body>
+        `;
+    }
+
+    private otpEmailHtml(otp: string) {
+        const font = "Helvetica, Arial, sans-serif";
+        const body = `
+            <p style="margin:0 0 28px 0; font-family:${font}; font-size:15px; line-height:1.6; color:#57574f;">
+                Enter this code to finish setting up your StapleHaus account. It expires in 10 minutes.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td align="center" style="padding:20px 0; border:1px solid #111111; background-color:#fafafa;">
+                        <span style="font-family:${font}; font-size:34px; font-weight:700; letter-spacing:12px; color:#111111;">${otp}</span>
+                    </td>
+                </tr>
+            </table>
+            <p style="margin:28px 0 0 0; font-family:${font}; font-size:13px; line-height:1.6; color:#a6a6a0;">
+                Didn't request this? You can safely ignore this email.
+            </p>
+        `;
+        return this.brandedEmailHtml("Verify your email", "Confirm your account", body);
+    }
+
+    private securityAlertHtml(title: string, intro: string, details: Array<[string, string]>) {
+        const font = "Helvetica, Arial, sans-serif";
+        const detailRows = details.map(([label, value]) => `
+            <tr>
+                <td style="padding:8px 0; font-family:${font}; font-size:13px; color:#76766f; width:120px;">${label}</td>
+                <td style="padding:8px 0; font-family:${font}; font-size:13px; color:#111111;">${value}</td>
+            </tr>
+        `).join("");
+        const body = `
+            <p style="margin:0 0 20px 0; font-family:${font}; font-size:15px; line-height:1.6; color:#57574f;">${intro}</p>
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-top:1px solid #e4e4e0;">
+                ${detailRows}
+            </table>
+            <p style="margin:28px 0 0 0; font-family:${font}; font-size:13px; line-height:1.6; color:#a6a6a0;">
+                If this was you, no action is needed. If not, change your password and review your active sessions immediately.
+            </p>
+        `;
+        return this.brandedEmailHtml("Security alert", title, body);
+    }
+
+    private sendAccountLockedAlert(email: string) {
+        const intro = "Your account has been temporarily locked for 15 minutes after too many failed sign-in attempts.";
+        const html = this.securityAlertHtml("Account temporarily locked", intro, [["Time", new Date().toUTCString()]]);
+        sendEmail(email, "Your StapleHaus account has been locked", html, `${intro} If this wasn't you, change your password once the lock expires.`)
+            .catch((error) => console.error("Failed to send account locked alert", error));
+    }
+
+    private sendNewDeviceAlert(email: string, context: RequestContext) {
+        const intro = "Your account was just signed in to from a device we haven't seen before.";
+        const rows: Array<[string, string]> = [["Time", new Date().toUTCString()]];
+        if (context.userAgent) rows.push(["Device", context.userAgent.slice(0, 200)]);
+        if (context.ip) rows.push(["IP address", context.ip]);
+        const html = this.securityAlertHtml("New device sign-in", intro, rows);
+        sendEmail(email, "New sign-in to your StapleHaus account", html, `${intro} If this wasn't you, change your password and review your active sessions.`)
+            .catch((error) => console.error("Failed to send new device alert", error));
+    }
+
     private async issueOtp(user: IUser) {
         const otp = randomInt(100000, 1000000).toString();
         const otpHash = await bcryptjs.hash(otp, 10);
         const otpExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
         await userRepository.setOtp(user._id.toString(), otpHash, otpExpiresAt);
-        await sendOtpEmail(user.email, otp);
+        await sendEmail(
+            user.email,
+            `${otp} is your StapleHaus verification code`,
+            this.otpEmailHtml(otp),
+            `Your StapleHaus verification code is ${otp}. It expires in 10 minutes. If you didn't request this, you can ignore this email.`,
+        );
     }
 
     async registerUser(data: RegisterUserDto, context: RequestContext = {}) {
@@ -238,6 +338,7 @@ export class UserService {
                     email: existingUser.email,
                     reason: "too_many_attempts",
                 });
+                this.sendAccountLockedAlert(existingUser.email);
             } else {
                 await activityLogService.record({
                     ...context,
@@ -507,6 +608,105 @@ export class UserService {
             throw new HttpError(404, "User not found");
         }
         return updatedUser;
+    }
+
+    private resetPasswordEmailHtml(resetLink: string) {
+        const font = "Helvetica, Arial, sans-serif";
+        const body = `
+            <p style="margin:0 0 28px 0; font-family:${font}; font-size:15px; line-height:1.6; color:#57574f;">
+                We received a request to reset your StapleHaus password. Click the button below to choose a new one. This link expires in 15 minutes and can only be used once.
+            </p>
+            <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td align="center">
+                        <a href="${resetLink}" style="font-family:${font}; font-size:15px; font-weight:700; color:#ffffff; background-color:#111111; text-decoration:none; padding:14px 32px; display:inline-block;">Reset password</a>
+                    </td>
+                </tr>
+            </table>
+            <p style="margin:28px 0 0 0; font-family:${font}; font-size:13px; line-height:1.6; color:#a6a6a0;">
+                Didn't request this? You can safely ignore this email — your password will stay the same.
+            </p>
+        `;
+        return this.brandedEmailHtml("Password reset", "Reset your password", body);
+    }
+
+    async requestPasswordReset(data: ForgotPasswordDto, context: RequestContext = {}) {
+        const user = await userRepository.getUserByEmail(data.email);
+        if (!user || !user.password || user.isEmailVerified === false) {
+            await activityLogService.record({
+                ...context,
+                action: "password_reset_request",
+                status: "failure",
+                email: data.email,
+                reason: "unknown_or_ineligible_account",
+            });
+            return true;
+        }
+
+        const token = randomBytes(32).toString("hex");
+        const tokenHash = createHash("sha256").update(token).digest("hex");
+        await userRepository.setPasswordResetToken(user._id.toString(), tokenHash, new Date(Date.now() + PASSWORD_RESET_TTL_MS));
+
+        const resetLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+        await sendEmail(
+            user.email,
+            "Reset your StapleHaus password",
+            this.resetPasswordEmailHtml(resetLink),
+            `We received a request to reset your StapleHaus password. Open this link to choose a new one (expires in 15 minutes): ${resetLink}. If you didn't request this, you can ignore this email.`,
+        );
+
+        await activityLogService.record({
+            ...context,
+            action: "password_reset_request",
+            status: "success",
+            userId: user._id.toString(),
+            email: user.email,
+        });
+
+        return true;
+    }
+
+    async resetPassword(data: ResetPasswordDto, context: RequestContext = {}) {
+        const tokenHash = createHash("sha256").update(data.token).digest("hex");
+        const user = await userRepository.getUserByResetTokenHash(tokenHash);
+
+        if (!user || !user.password || !user.passwordResetExpiresAt || user.passwordResetExpiresAt.getTime() < Date.now()) {
+            await activityLogService.record({
+                ...context,
+                action: "password_reset",
+                status: "failure",
+                userId: user?._id.toString(),
+                email: user?.email,
+                reason: "invalid_or_expired_token",
+            });
+            throw new HttpError(400, "This reset link is invalid or has expired. Please request a new one.");
+        }
+
+        const userId = user._id.toString();
+
+        const previousHashes = [user.password, ...(user.passwordHistory ?? [])];
+        for (const hash of previousHashes) {
+            if (await bcryptjs.compare(data.password, hash)) {
+                throw new HttpError(400, "You cannot reuse a recent password. Please choose a different one.");
+            }
+        }
+
+        const newHash = await bcryptjs.hash(data.password, 10);
+        const nextHistory = previousHashes.slice(0, PASSWORD_HISTORY_LIMIT);
+        await userRepository.updatePassword(userId, newHash, nextHistory, new Date());
+        await userRepository.clearPasswordResetToken(userId);
+        await userRepository.resetFailedLoginAttempts(userId);
+        await sessionService.revokeAllSessions(userId);
+
+        await activityLogService.record({
+            ...context,
+            action: "password_reset",
+            status: "success",
+            userId,
+            email: user.email,
+        });
+
+        return true;
     }
 
     async changePassword(userId: string, data: ChangePasswordDto, context: RequestContext = {}) {
