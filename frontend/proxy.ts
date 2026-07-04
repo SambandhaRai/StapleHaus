@@ -4,6 +4,17 @@ const guestOnlyRoutes = ['/login', '/register'];
 const protectedRoutes = ['/account', '/cart', '/checkout', '/orders', '/wishlist'];
 const adminRoutes = ['/admin'];
 
+const getRole = (request: NextRequest): string | null => {
+    const raw = request.cookies.get("user_data")?.value;
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as { role?: string };
+        return parsed.role ?? null;
+    } catch {
+        return null;
+    }
+};
+
 export function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
@@ -20,8 +31,14 @@ export function proxy(request: NextRequest) {
         return NextResponse.next();
     }
 
+    const isAdmin = getRole(request) === "admin";
+
+    if (isAdmin && !isAdminRoute) {
+        return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
     if (isGuestOnly) {
-        return NextResponse.redirect(new URL("/", request.url));
+        return NextResponse.redirect(new URL(isAdmin ? "/admin" : "/", request.url));
     }
 
     return NextResponse.next();
@@ -29,13 +46,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
     matcher: [
-        "/login",
-        "/register",
-        "/account/:path*",
-        "/cart/:path*",
-        "/checkout/:path*",
-        "/orders/:path*",
-        "/wishlist/:path*",
-        "/admin/:path*"
+        "/((?!api|_next/static|_next/image|favicon.ico|uploads).*)",
     ]
 }

@@ -104,6 +104,27 @@ export const API = {
             GET_ALL: "/api/admin/orders",
             UPDATE_STATUS: (id: string) => `/api/admin/orders/${id}/status`,
         },
+        ACTIVITY_LOGS: (
+            params?: {
+                email?: string;
+                action?: string;
+                status?: string;
+                page?: number;
+                limit?: number;
+            }
+        ) => {
+            if (!params) return "/api/admin/activity-logs";
+
+            const q = new URLSearchParams();
+            if (params.email) q.set("email", params.email);
+            if (params.action) q.set("action", params.action);
+            if (params.status) q.set("status", params.status);
+            if (params.page !== undefined) q.set("page", String(params.page));
+            if (params.limit !== undefined) q.set("limit", String(params.limit));
+
+            const query = q.toString();
+            return query ? `/api/admin/activity-logs?${query}` : "/api/admin/activity-logs";
+        },
         DISCOUNT: {
             GET_ALL: "/api/admin/discounts",
             CREATE: "/api/admin/discounts",
