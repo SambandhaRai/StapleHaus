@@ -2,11 +2,9 @@
 
 import type { SyntheticEvent } from "react";
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { handleCheckout } from "@/lib/actions/orders-action";
 import { handleAddAddress } from "@/lib/actions/users-action";
-import { useCart } from "@/app/_components/cart-provider";
 import type {
     AppliedDiscount,
     CheckoutAddress,
@@ -48,8 +46,6 @@ const getAddressLabel = (address: CheckoutAddress) =>
     [address.label, address.line1, address.city].filter(Boolean).join(" · ");
 
 export function CheckoutForm({ user, cart }: CheckoutFormProps) {
-    const router = useRouter();
-    const { refresh } = useCart();
     const items = useMemo(() => cart.items || [], [cart.items]);
     const addresses = user.addresses || [];
     const [step, setStep] = useState<"delivery" | "payment">("delivery");
@@ -131,19 +127,31 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
                 ...(discount?.code ? { discountCode: discount.code } : {}),
             });
 
-            if (!result.success) {
+            if (!result.success || !result.payment) {
                 toast.error(result.message || "Checkout failed");
+                setSubmitting(false);
                 return;
             }
-            await refresh();
-            toast.success("Order placed successfully");
-            router.push("/account");
-            router.refresh();
+            redirectToEsewa(result.payment);
         } catch (err: unknown) {
             toast.error(err instanceof Error ? err.message : "Checkout failed");
-        } finally {
             setSubmitting(false);
         }
+    };
+
+    const redirectToEsewa = (payment: { url: string; fields: Record<string, string> }) => {
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = payment.url;
+        Object.entries(payment.fields).forEach(([name, value]) => {
+            const input = document.createElement("input");
+            input.type = "hidden";
+            input.name = name;
+            input.value = value;
+            form.appendChild(input);
+        });
+        document.body.appendChild(form);
+        form.submit();
     };
 
     return (
@@ -284,9 +292,9 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
                         <div>
                             <h1 className="h4 mb-5">Payment</h1>
                             <div className="border border-border p-5">
-                                <p className="font-semibold">Payment Method</p>
+                                <p className="font-semibold">eSewa</p>
                                 <p className="body-sm mt-2 text-muted">
-                                    Payment integration is not connected yet. Place the order to reserve your items.
+                                    You'll be redirected to eSewa to complete payment securely. Your order is reserved until payment is confirmed.
                                 </p>
                             </div>
                         </div>
@@ -311,7 +319,7 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
                             disabled={submitting}
                             className="label-caps w-full bg-ink px-8 py-4 text-paper transition hover:bg-neutral-800 disabled:opacity-50 sm:w-80"
                         >
-                            {submitting ? "Placing Order..." : "Place Order"}
+                            {submitting ? "Redirecting to eSewa..." : "Pay With eSewa"}
                         </button>
                     </section>
                 )}

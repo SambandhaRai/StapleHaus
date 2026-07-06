@@ -88,6 +88,7 @@ export const API = {
     },
     ORDER: {
         CHECKOUT: "/api/orders",
+        VERIFY_PAYMENT: "/api/orders/verify-payment",
         GET_MY_ORDERS: "/api/orders",
         GET_BY_ID: (id: string) => `/api/orders/${id}`,
     },

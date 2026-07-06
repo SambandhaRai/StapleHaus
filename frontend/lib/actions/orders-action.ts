@@ -2,6 +2,7 @@
 
 import {
     checkout,
+    verifyPayment,
     getMyOrders,
     getOrderById,
     getAllOrders,
@@ -15,7 +16,8 @@ export const handleCheckout = async (orderData: any) => {
             return {
                 success: true,
                 data: result.data,
-                message: "Order placed successfully"
+                payment: result.payment,
+                message: "Order created, redirecting to payment"
             };
         }
         return {
@@ -26,6 +28,22 @@ export const handleCheckout = async (orderData: any) => {
         return {
             success: false,
             message: err.message || "Checkout Failed"
+        };
+    }
+}
+
+export const handleVerifyPayment = async (data: string) => {
+    try {
+        const result = await verifyPayment(data);
+        return {
+            success: Boolean(result.success),
+            data: result.data,
+            message: result.message || "Payment verified"
+        };
+    } catch (err: Error | any) {
+        return {
+            success: false,
+            message: err.message || "Payment verification failed"
         };
     }
 }

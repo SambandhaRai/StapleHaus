@@ -13,7 +13,7 @@ const contentSecurityPolicy = [
   `frame-src https://accounts.google.com https://challenges.cloudflare.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
-  `form-action 'self'`,
+  `form-action 'self' https://rc-epay.esewa.com.np https://epay.esewa.com.np`,
   `object-src 'none'`,
 ].join("; ");
 
