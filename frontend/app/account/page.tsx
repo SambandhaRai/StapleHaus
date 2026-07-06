@@ -53,13 +53,20 @@ export default async function AccountPage() {
                 <h1 className="h1 mb-2">Hi, {user.name}</h1>
                 <p className="body-sm mb-12 text-muted">{user.email}</p>
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Link
-                        href="/orders"
+                        href="/wishlist"
                         className="border border-border p-6 transition hover:border-ink"
                     >
-                        <h2 className="h4 mb-1">Orders</h2>
-                        <p className="body-sm text-muted">Track and review your orders.</p>
+                        <h2 className="h4 mb-1">Wishlist</h2>
+                        <p className="body-sm text-muted">Pieces you&apos;ve saved for later.</p>
+                    </Link>
+                    <Link
+                        href="/cart"
+                        className="border border-border p-6 transition hover:border-ink"
+                    >
+                        <h2 className="h4 mb-1">Cart</h2>
+                        <p className="body-sm text-muted">Review the items in your bag.</p>
                     </Link>
                     <Link
                         href="/account/addresses"
@@ -69,11 +76,11 @@ export default async function AccountPage() {
                         <p className="body-sm text-muted">Manage your shipping addresses.</p>
                     </Link>
                     <Link
-                        href="/wishlist"
+                        href="/orders"
                         className="border border-border p-6 transition hover:border-ink"
                     >
-                        <h2 className="h4 mb-1">Wishlist</h2>
-                        <p className="body-sm text-muted">Pieces you&apos;ve saved for later.</p>
+                        <h2 className="h4 mb-1">Orders</h2>
+                        <p className="body-sm text-muted">Track and review your orders.</p>
                     </Link>
                 </div>
 
