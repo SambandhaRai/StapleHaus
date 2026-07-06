@@ -7,6 +7,11 @@ export const CheckoutDto = z.object({
 });
 export type CheckoutDto = z.infer<typeof CheckoutDto>;
 
+export const VerifyPaymentDto = z.object({
+    data: z.string().trim().min(1, "Payment data is required"),
+});
+export type VerifyPaymentDto = z.infer<typeof VerifyPaymentDto>;
+
 export const UpdateOrderStatusDto = z.object({
     orderStatus: OrderStatusEnum,
 });

@@ -17,3 +17,7 @@ if (!twoFactorEncKey || !/^[0-9a-fA-F]{64}$/.test(twoFactorEncKey)) {
     throw new Error("TWO_FACTOR_ENC_KEY must be set to 64 hex characters (32 random bytes)");
 }
 export const TWO_FACTOR_ENC_KEY: string = twoFactorEncKey;
+export const ESEWA_PRODUCT_CODE: string = process.env.ESEWA_PRODUCT_CODE || "EPAYTEST";
+export const ESEWA_SECRET: string = process.env.ESEWA_SECRET || "8gBm/:&EnhH.1/q";
+export const ESEWA_FORM_URL: string = process.env.ESEWA_FORM_URL || "https://rc-epay.esewa.com.np/api/epay/main/v2/form";
+export const ESEWA_STATUS_URL: string = process.env.ESEWA_STATUS_URL || "https://rc.esewa.com.np/api/epay/transaction/status/";

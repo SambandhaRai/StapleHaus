@@ -4,6 +4,7 @@ import { OrderStatusType, PaymentStatusType } from "../types/order.type";
 
 const OrderItemSchema: Schema = new Schema({
     productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
+    variantSku: { type: String, required: true },
     name: { type: String, required: true },
     image: { type: String },
     size: { type: String, required: true },
@@ -22,6 +23,9 @@ const OrderSchema: Schema = new Schema({
         amount: { type: Number, default: 0, min: 0 },
     },
     total: { type: Number, required: true, min: 0 },
+    paymentMethod: { type: String, default: "esewa" },
+    transactionUuid: { type: String, unique: true, sparse: true },
+    paymentRef: { type: String },
     paymentStatus: { type: String, enum: ["pending", "paid", "failed"], default: "pending" },
     orderStatus: { type: String, enum: ["pending", "paid", "shipped", "delivered", "cancelled"], default: "pending" },
 }, { timestamps: true });
@@ -36,6 +40,7 @@ OrderSchema.set("toJSON", {
 export interface IOrderItem {
     _id: mongoose.Types.ObjectId;
     productId: mongoose.Types.ObjectId;
+    variantSku: string;
     name: string;
     image?: string;
     size: string;
@@ -52,6 +57,9 @@ export interface IOrder extends Document {
     subtotal: number;
     discount: { code?: string; amount: number };
     total: number;
+    paymentMethod: string;
+    transactionUuid?: string;
+    paymentRef?: string;
     paymentStatus: PaymentStatusType;
     orderStatus: OrderStatusType;
     createdAt: Date;

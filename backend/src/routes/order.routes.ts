@@ -7,6 +7,7 @@ const router = Router();
 const orderController = new OrderController();
 
 router.post("/orders", authorizedMiddleware, checkoutLimiter, orderController.checkout);
+router.post("/orders/verify-payment", authorizedMiddleware, orderController.verifyPayment);
 router.get("/orders", authorizedMiddleware, orderController.getMyOrders);
 router.get("/orders/:id", authorizedMiddleware, orderController.getOrderById);
 

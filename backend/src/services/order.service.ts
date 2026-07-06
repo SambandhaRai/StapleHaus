@@ -7,7 +7,10 @@ import { IOrderItem } from "../models/order.model";
 import { CheckoutDto } from "../dtos/order.dto";
 import { OrderStatusType } from "../types/order.type";
 import { HttpError } from "../errors/http-error";
+import { buildEsewaForm, decodeEsewaCallback, isCallbackSignatureValid, verifyEsewaStatus } from "../utils/esewa";
+import { VerifyPaymentDto } from "../dtos/order.dto";
 import mongoose from "mongoose";
+import { randomUUID } from "crypto";
 
 let orderRepository = new OrderRepository();
 let cartRepository = new CartRepository();
@@ -56,6 +59,7 @@ export class OrderService {
             const unitPrice = variant.priceOverride ?? product.basePrice;
             orderItems.push({
                 productId: product._id,
+                variantSku: item.variantSku,
                 name: product.name,
                 image: product.images?.[0],
                 size: variant.size,
@@ -68,11 +72,9 @@ export class OrderService {
         subtotal = round2(subtotal);
 
         let discount: { code?: string; amount: number } = { amount: 0 };
-        let appliedDiscountId: string | null = null;
         if (data.discountCode) {
             const applied = await discountService.validateDiscount({ code: data.discountCode, subtotal });
             discount = { code: applied.code, amount: applied.amount };
-            appliedDiscountId = applied.discountId;
         }
 
         const total = round2(subtotal - discount.amount);
@@ -99,6 +101,7 @@ export class OrderService {
             phone: address.phone,
         };
 
+        const transactionUuid = randomUUID();
         const order = await orderRepository.createOrder({
             userId,
             items: orderItems,
@@ -106,16 +109,73 @@ export class OrderService {
             subtotal,
             discount,
             total,
-            paymentStatus: "paid",
-            orderStatus: "paid",
+            transactionUuid,
+            paymentStatus: "pending",
+            orderStatus: "pending",
         });
 
-        if (appliedDiscountId) {
-            await discountService.redeemDiscount(appliedDiscountId);
+        const payment = buildEsewaForm(transactionUuid, total);
+
+        return { order, payment };
+    }
+
+    private async restoreStock(order: { items: { productId: mongoose.Types.ObjectId; variantSku: string; quantity: number }[] }) {
+        for (const item of order.items) {
+            await productRepository.increaseStock(
+                item.productId.toString(),
+                item.variantSku,
+                item.quantity
+            );
+        }
+    }
+
+    async verifyPayment(userId: string, data: VerifyPaymentDto) {
+        const callback = decodeEsewaCallback(data.data);
+        if (!callback || !callback.transaction_uuid) {
+            throw new HttpError(400, "Invalid payment response");
+        }
+        if (!isCallbackSignatureValid(callback)) {
+            console.warn("eSewa callback signature mismatch for", callback.transaction_uuid);
+        }
+
+        const order = await orderRepository.getByTransactionUuid(callback.transaction_uuid);
+        if (!order || order.userId.toString() !== userId) {
+            throw new HttpError(404, "Order not found");
+        }
+        if (order.paymentStatus === "paid") {
+            return order;
+        }
+        if (order.paymentStatus === "failed") {
+            throw new HttpError(400, "This payment has already failed. Please place a new order.");
+        }
+
+        const isComplete = callback.status === "COMPLETE" && await verifyEsewaStatus(order.transactionUuid!, order.total);
+
+        if (!isComplete) {
+            await this.restoreStock(order);
+            await orderRepository.updatePaymentResult(order._id.toString(), {
+                paymentStatus: "failed",
+                orderStatus: "cancelled",
+            });
+            throw new HttpError(400, "Payment was not completed. Your items have been released.");
+        }
+
+        const paidOrder = await orderRepository.updatePaymentResult(order._id.toString(), {
+            paymentStatus: "paid",
+            orderStatus: "paid",
+            paymentRef: callback.transaction_code,
+        });
+
+        if (order.discount?.code) {
+            try {
+                const applied = await discountService.validateDiscount({ code: order.discount.code, subtotal: order.subtotal });
+                await discountService.redeemDiscount(applied.discountId);
+            } catch {
+            }
         }
         await cartRepository.clearItems(userId);
 
-        return order;
+        return paidOrder;
     }
 
     async getMyOrders(userId: string) {

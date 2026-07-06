@@ -1,5 +1,5 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { CheckoutDto, UpdateOrderStatusDto } from "../dtos/order.dto";
+import { CheckoutDto, UpdateOrderStatusDto, VerifyPaymentDto } from "../dtos/order.dto";
 import { OrderService } from "../services/order.service";
 import { Request, Response } from "express";
 import z from "zod";
@@ -21,11 +21,36 @@ export class OrderController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const order = await orderService.checkout(userId, parsedData.data);
+            const { order, payment } = await orderService.checkout(userId, parsedData.data);
             return res.status(201).json({
                 success: true,
                 data: order,
-                message: "Order placed successfully"
+                payment,
+                message: "Order created, redirecting to payment"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async verifyPayment(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: "Unauthorized" });
+            }
+            const parsedData = VerifyPaymentDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const order = await orderService.verifyPayment(userId, parsedData.data);
+            return res.status(200).json({
+                success: true,
+                data: order,
+                message: "Payment verified successfully"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);

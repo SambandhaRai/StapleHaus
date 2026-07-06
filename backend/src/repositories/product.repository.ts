@@ -32,6 +32,7 @@ export interface IProductRepository {
     updateOneProduct(id: string, data: UpdateProductData): Promise<IProduct | null>;
     deleteOneProduct(id: string): Promise<boolean | null>;
     decreaseStock(productId: string, sku: string, quantity: number): Promise<IProduct | null>;
+    increaseStock(productId: string, sku: string, quantity: number): Promise<IProduct | null>;
     setRatingStats(productId: string, avgRating: number, reviewCount: number): Promise<IProduct | null>;
 }
 
@@ -119,6 +120,14 @@ export class ProductRepository implements IProductRepository {
         return await ProductModel.findOneAndUpdate(
             { _id: productId, "variants.sku": sku, "variants.stock": { $gte: quantity } },
             { $inc: { "variants.$.stock": -quantity } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async increaseStock(productId: string, sku: string, quantity: number): Promise<IProduct | null> {
+        return await ProductModel.findOneAndUpdate(
+            { _id: productId, "variants.sku": sku },
+            { $inc: { "variants.$.stock": quantity } },
             { returnDocument: "after" }
         );
     }
