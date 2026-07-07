@@ -5,6 +5,7 @@ import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID, FRONTEND_URL } from "../c
 import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangePasswordDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
 import { sendEmail } from "../config/email";
 import { encryptSecret, decryptSecret } from "../utils/crypto";
+import { isPasswordBreached } from "../utils/pwned";
 import { ActivityLogService } from "./activity-log.service";
 import { SessionService } from "./session.service";
 import { RequestContext } from "../types/activity-log.type";
@@ -205,6 +206,10 @@ export class UserService {
                 await this.issueOtp(existingUser);
             }
             return { user: null };
+        }
+
+        if (await isPasswordBreached(data.password)) {
+            throw new HttpError(400, "This password has appeared in a known data breach. Please choose a different one.");
         }
 
         const password = await bcryptjs.hash(data.password, 10);
@@ -692,6 +697,10 @@ export class UserService {
             }
         }
 
+        if (await isPasswordBreached(data.password)) {
+            throw new HttpError(400, "This password has appeared in a known data breach. Please choose a different one.");
+        }
+
         const newHash = await bcryptjs.hash(data.password, 10);
         const nextHistory = previousHashes.slice(0, PASSWORD_HISTORY_LIMIT);
         await userRepository.updatePassword(userId, newHash, nextHistory, new Date());
@@ -736,6 +745,10 @@ export class UserService {
             if (await bcryptjs.compare(data.newPassword, hash)) {
                 throw new HttpError(400, "You cannot reuse a recent password. Please choose a different one.");
             }
+        }
+
+        if (await isPasswordBreached(data.newPassword)) {
+            throw new HttpError(400, "This password has appeared in a known data breach. Please choose a different one.");
         }
 
         const newHash = await bcryptjs.hash(data.newPassword, 10);
