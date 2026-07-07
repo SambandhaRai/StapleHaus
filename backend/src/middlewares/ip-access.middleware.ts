@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { IpAccessService } from "../services/ip-access.service";
 import { getClientIp } from "../utils/request-context";
+import { logger } from "../utils/logger";
 
 const ipAccessService = new IpAccessService();
 
@@ -21,7 +22,7 @@ export const ipAccessMiddleware = async (req: Request, res: Response, next: Next
 
         return next();
     } catch (error) {
-        console.error("IP access check failed", error);
+        logger.error("IP access check failed", { error: String(error) });
         return next();
     }
 };

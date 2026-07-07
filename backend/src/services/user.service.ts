@@ -8,6 +8,7 @@ import { encryptSecret, decryptSecret } from "../utils/crypto";
 import { ActivityLogService } from "./activity-log.service";
 import { SessionService } from "./session.service";
 import { RequestContext } from "../types/activity-log.type";
+import { logger } from "../utils/logger";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
@@ -171,7 +172,7 @@ export class UserService {
         const intro = "Your account has been temporarily locked for 15 minutes after too many failed sign-in attempts.";
         const html = this.securityAlertHtml("Account temporarily locked", intro, [["Time", new Date().toUTCString()]]);
         sendEmail(email, "Your StapleHaus account has been locked", html, `${intro} If this wasn't you, change your password once the lock expires.`)
-            .catch((error) => console.error("Failed to send account locked alert", error));
+            .catch((error) => logger.error("Failed to send account locked alert", { error: String(error) }));
     }
 
     private sendNewDeviceAlert(email: string, context: RequestContext) {
@@ -181,7 +182,7 @@ export class UserService {
         if (context.ip) rows.push(["IP address", context.ip]);
         const html = this.securityAlertHtml("New device sign-in", intro, rows);
         sendEmail(email, "New sign-in to your StapleHaus account", html, `${intro} If this wasn't you, change your password and review your active sessions.`)
-            .catch((error) => console.error("Failed to send new device alert", error));
+            .catch((error) => logger.error("Failed to send new device alert", { error: String(error) }));
     }
 
     private async issueOtp(user: IUser) {

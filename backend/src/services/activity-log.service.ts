@@ -1,5 +1,6 @@
 import { ActivityLogRepository } from "../repositories/activity-log.repository";
 import { ActivityActionType, ActivityEvent, ActivityStatusType } from "../types/activity-log.type";
+import { logger } from "../utils/logger";
 
 let activityLogRepository = new ActivityLogRepository();
 
@@ -20,7 +21,7 @@ export class ActivityLogService {
                 reason: event.reason?.slice(0, MAX_REASON_LENGTH),
             });
         } catch (error) {
-            console.error("Failed to write activity log", error);
+            logger.error("Failed to write activity log", { error: String(error) });
         }
     }
 

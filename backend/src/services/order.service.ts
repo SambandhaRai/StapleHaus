@@ -9,6 +9,7 @@ import { OrderStatusType } from "../types/order.type";
 import { HttpError } from "../errors/http-error";
 import { buildEsewaForm, decodeEsewaCallback, isCallbackSignatureValid, verifyEsewaStatus } from "../utils/esewa";
 import { VerifyPaymentDto } from "../dtos/order.dto";
+import { logger } from "../utils/logger";
 import mongoose from "mongoose";
 import { randomUUID } from "crypto";
 
@@ -135,7 +136,7 @@ export class OrderService {
             throw new HttpError(400, "Invalid payment response");
         }
         if (!isCallbackSignatureValid(callback)) {
-            console.warn("eSewa callback signature mismatch for", callback.transaction_uuid);
+            logger.warn("eSewa callback signature mismatch", { transactionUuid: callback.transaction_uuid });
         }
 
         const order = await orderRepository.getByTransactionUuid(callback.transaction_uuid);
@@ -157,12 +158,20 @@ export class OrderService {
                 paymentStatus: "failed",
                 orderStatus: "cancelled",
             });
+            logger.warn("Order payment not completed, stock released", {
+                orderId: order._id.toString(),
+                transactionUuid: order.transactionUuid,
+            });
             throw new HttpError(400, "Payment was not completed. Your items have been released.");
         }
 
         const paidOrder = await orderRepository.updatePaymentResult(order._id.toString(), {
             paymentStatus: "paid",
             orderStatus: "paid",
+            paymentRef: callback.transaction_code,
+        });
+        logger.info("Order payment verified", {
+            orderId: order._id.toString(),
             paymentRef: callback.transaction_code,
         });
 
