@@ -8,6 +8,7 @@ build/
 uploads/
 backend/uploads/
 backend/certs/
+nginx/certs/
 
 # environment files
 .env
