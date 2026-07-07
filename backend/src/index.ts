@@ -4,6 +4,8 @@ import https from "https";
 import app from "./app";
 import { PORT } from "./config";
 import { connectDatabase } from "./database/mongoose";
+import { logger } from "./utils/logger";
+import { flushAlerts } from "./utils/alert";
 
 async function start() {
     await connectDatabase();
@@ -17,7 +19,11 @@ async function start() {
 
 
     https.createServer({ key, cert }, app).listen(PORT, () => {
-        console.log(`Server: https://localhost:${PORT}`);
+        logger.info(`Server started`, { url: `https://localhost:${PORT}` });
     })
 }
-start().catch((error) => console.log(error));
+start().catch(async (error) => {
+    logger.fatal("Server failed to start", { error: String(error) });
+    await flushAlerts();
+    process.exit(1);
+});

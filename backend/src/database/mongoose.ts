@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import { MONGODB_URI } from "../config";
+import { logger } from "../utils/logger";
+import { flushAlerts } from "../utils/alert";
 
 type ConnectDatabaseOptions = {
     exitOnError?: boolean;
@@ -12,10 +14,11 @@ export async function connectDatabase(
     const { exitOnError = true } = options;
     try {
         await mongoose.connect(uri);
-        console.log("Database connected succesfully");
+        logger.info("Database connected successfully");
     } catch (error) {
-        console.log("Database error: ", error);
+        logger.fatal("Database connection failed", { error: String(error) });
         if (exitOnError) {
+            await flushAlerts();
             process.exit(1);
         }
         throw error;
