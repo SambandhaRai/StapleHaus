@@ -66,3 +66,39 @@ export const disableTwoFactor = async (password: string) => {
         throw new Error(getApiErrorMessage(err, "Failed to disable two-factor authentication"));
     }
 };
+
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+        const response = await axios.post(API.USER.CHANGE_PASSWORD, { currentPassword, newPassword });
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to change password"));
+    }
+};
+
+export const getSessions = async () => {
+    try {
+        const response = await axios.get(API.USER.SESSIONS);
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to load sessions"));
+    }
+};
+
+export const revokeSession = async (sessionId: string) => {
+    try {
+        const response = await axios.delete(API.USER.REVOKE_SESSION(sessionId));
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to sign out session"));
+    }
+};
+
+export const revokeOtherSessions = async () => {
+    try {
+        const response = await axios.delete(API.USER.SESSIONS);
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to sign out other sessions"));
+    }
+};

@@ -4,17 +4,21 @@ import { HttpError } from "../errors/http-error";
 import { JWT_SECRET } from "../config";
 import { UserRoleType } from "../types/user.type";
 import { UserRepository } from "../repositories/user.repository";
+import { SessionService } from "../services/session.service";
+import { getRequestContext } from "../utils/request-context";
 
 const userRepository = new UserRepository();
+const sessionService = new SessionService();
 
 interface JwtPayload {
     id: string;
     email: string;
     role: UserRoleType;
     purpose?: string;
+    jti?: string;
 }
 
-export const authorizedMiddleware = (req: Request, res: Response, next: NextFunction) => {
+export const authorizedMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const authHeader = req.headers.authorization;
 
@@ -34,10 +38,16 @@ export const authorizedMiddleware = (req: Request, res: Response, next: NextFunc
             throw new HttpError(401, "Invalid token");
         }
 
+        const session = await sessionService.validateSession(decoded.jti, decoded.id, getRequestContext(req));
+        if (!session) {
+            throw new HttpError(401, "Session expired or revoked");
+        }
+
         req.user = {
             id: decoded.id,
             email: decoded.email,
             role: decoded.role,
+            sessionId: session._id.toString(),
         };
 
         next();

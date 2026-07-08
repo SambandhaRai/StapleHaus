@@ -7,6 +7,8 @@ import multer from "multer";
 import path from "path";
 import { FRONTEND_URL } from "./config";
 import { allowedImageMessage } from "./middlewares/upload.middleware";
+import { ipAccessMiddleware } from "./middlewares/ip-access.middleware";
+import { globalLimiter } from "./middlewares/rate-limit.middleware";
 
 dotenv.config();
 
@@ -20,6 +22,8 @@ import wishlistRoutes from "./routes/wishlist.routes";
 import orderRoutes from "./routes/order.routes";
 import reviewRoutes from "./routes/review.routes";
 import discountRoutes from "./routes/discount.routes";
+import activityRoutes from "./routes/activity.routes";
+import ipAccessRoutes from "./routes/ip-access.routes";
 
 const app: Application = express();
 
@@ -73,6 +77,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     res.status(403).json({ success: false, message: "Request origin is not allowed" });
 });
 
+app.use(ipAccessMiddleware);
+app.use(globalLimiter);
+
 app.use(bodyParser.json());
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
     setHeaders: (res) => {
@@ -91,6 +98,8 @@ app.use("/api/wishlist", wishlistRoutes);
 app.use("/api", orderRoutes);
 app.use("/api", reviewRoutes);
 app.use("/api", discountRoutes);
+app.use("/api", activityRoutes);
+app.use("/api", ipAccessRoutes);
 
 app.use((error: Error, _req: Request, res: Response, next: NextFunction) => {
     if (error instanceof multer.MulterError) {

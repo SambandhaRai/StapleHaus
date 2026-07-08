@@ -7,7 +7,9 @@ declare global {
                 id: string;
                 email: string;
                 role: UserRoleType;
+                sessionId?: string;
             };
+            ipAllowlisted?: boolean;
         }
     }
 }

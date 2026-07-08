@@ -13,7 +13,7 @@ const contentSecurityPolicy = [
   `frame-src https://accounts.google.com https://challenges.cloudflare.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
-  `form-action 'self'`,
+  `form-action 'self' https://rc-epay.esewa.com.np https://epay.esewa.com.np`,
   `object-src 'none'`,
 ].join("; ");
 
@@ -27,7 +27,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  allowedDevOrigins: ["192.168.1.*", "localhost", "10.1.19.*"],
+  allowedDevOrigins: ["192.168.1.*", "192.168.239.*", "localhost", "10.1.19.*"],
   experimental: {
     serverActions: {
       bodySizeLimit: "8mb",

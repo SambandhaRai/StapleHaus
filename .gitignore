@@ -8,6 +8,7 @@ build/
 uploads/
 backend/uploads/
 backend/certs/
+nginx/certs/
 
 # environment files
 .env
@@ -17,6 +18,8 @@ backend/certs/
 .env.production.local
 
 # logs
+logs/
+backend/logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

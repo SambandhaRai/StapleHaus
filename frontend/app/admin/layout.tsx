@@ -43,9 +43,6 @@ export default async function AdminLayout({
 
                 <div className="space-y-3 border-t border-border px-6 py-5">
                     <p className="body-sm text-muted">{user.name}</p>
-                    <Link href="/" className="label-caps link-underline block">
-                        Back to store
-                    </Link>
                     <LogoutButton />
                 </div>
             </aside>

@@ -1,6 +1,7 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { UpdateUserDto, CreateAddressDto, UpdateAddressDto, EnableTwoFactorDto, DisableTwoFactorDto } from "../dtos/user.dto";
+import { UpdateUserDto, CreateAddressDto, UpdateAddressDto, EnableTwoFactorDto, DisableTwoFactorDto, ChangePasswordDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
+import { getRequestContext } from "../utils/request-context";
 import { Request, Response } from "express";
 import z from "zod";
 
@@ -43,6 +44,29 @@ export class UserController {
                 success: true,
                 data: updatedUser,
                 message: "Profile updated successfully"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async changePassword(req: Request, res: Response) {
+        try {
+            const userId = req.user?.id;
+            if (!userId) {
+                return res.status(401).json({ success: false, message: "Unauthorized" });
+            }
+            const parsedData = ChangePasswordDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            await userService.changePassword(userId, parsedData.data, getRequestContext(req));
+            return res.status(200).json({
+                success: true,
+                message: "Password changed successfully"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);
@@ -146,7 +170,7 @@ export class UserController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const data = await userService.enableTwoFactor(userId, parsedData.data.token);
+            const data = await userService.enableTwoFactor(userId, parsedData.data.token, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data,
@@ -170,7 +194,7 @@ export class UserController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            await userService.disableTwoFactor(userId, parsedData.data.password);
+            await userService.disableTwoFactor(userId, parsedData.data.password, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 message: "Two-factor authentication disabled"

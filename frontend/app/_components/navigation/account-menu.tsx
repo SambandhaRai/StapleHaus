@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import Link from "next/link";
 import { User } from "lucide-react";
 import { handleLogout } from "@/lib/actions/auth-action";
+import { useCart } from "@/app/_components/cart-provider";
 
 interface AccountMenuProps {
     userName?: string | null;
@@ -20,11 +21,13 @@ const accountLinks = [
 
 export function AccountMenu({ userName, accountHref }: AccountMenuProps) {
     const router = useRouter();
+    const { reset } = useCart();
     const [loggingOut, setLoggingOut] = useState(false);
 
     const onLogout = async () => {
         setLoggingOut(true);
         await handleLogout();
+        reset();
         toast.success("Logged out");
         router.push("/");
         router.refresh();

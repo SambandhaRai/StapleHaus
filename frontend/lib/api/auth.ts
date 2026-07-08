@@ -98,6 +98,38 @@ export const googleLogin = async (credential: string, nonce: string) => {
     }
 }
 
+export const forgotPassword = async (email: string, captchaToken: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.FORGOT_PASSWORD,
+            { email, captchaToken }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Could not send reset link"
+        );
+    }
+}
+
+export const resetPassword = async (token: string, password: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.RESET_PASSWORD,
+            { token, password }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Password reset failed"
+        );
+    }
+}
+
 export const logoutUser = async () => {
     try {
         const response = await axios.post(

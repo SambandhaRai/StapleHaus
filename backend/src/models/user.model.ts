@@ -26,17 +26,29 @@ const UserSchema: Schema = new Schema({
     twoFactorSecret: { type: String },
     twoFactorPendingSecret: { type: String },
     twoFactorBackupCodes: { type: [String], default: undefined },
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockUntil: { type: Date },
+    passwordHistory: { type: [String], default: [] },
+    passwordChangedAt: { type: Date },
+    passwordResetTokenHash: { type: String },
+    passwordResetExpiresAt: { type: Date },
 }, { timestamps: true });
 
 UserSchema.set("toJSON", {
     transform: (_doc, ret) => {
         const serialized = ret as Record<string, unknown>;
+        serialized.hasPassword = Boolean(serialized.password);
         delete serialized.password;
         delete serialized.otpHash;
         delete serialized.otpExpiresAt;
         delete serialized.twoFactorSecret;
         delete serialized.twoFactorPendingSecret;
         delete serialized.twoFactorBackupCodes;
+        delete serialized.failedLoginAttempts;
+        delete serialized.lockUntil;
+        delete serialized.passwordHistory;
+        delete serialized.passwordResetTokenHash;
+        delete serialized.passwordResetExpiresAt;
         delete serialized.__v;
         return ret;
     },
@@ -61,6 +73,12 @@ export interface IUser extends Document {
     twoFactorSecret?: string;
     twoFactorPendingSecret?: string;
     twoFactorBackupCodes?: string[];
+    failedLoginAttempts: number;
+    lockUntil?: Date;
+    passwordHistory: string[];
+    passwordChangedAt?: Date;
+    passwordResetTokenHash?: string;
+    passwordResetExpiresAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }

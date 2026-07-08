@@ -4,7 +4,7 @@ import { Footer } from "@/app/_components/footer";
 import { Navbar } from "@/app/_components/navigation/navbar";
 import { handleGetMyOrders } from "@/lib/actions/orders-action";
 import { getAuthToken } from "@/lib/cookie";
-import { formatPrice as money } from "@/lib/format";
+import { formatPrice as money, formatOrderStatus } from "@/lib/format";
 
 type OrderItem = {
     name?: string;
@@ -63,7 +63,11 @@ export default async function OrdersPage() {
                 ) : (
                     <div className="divide-y divide-border border-y border-border">
                         {orders.map((order) => (
-                            <article key={order._id} className="grid gap-4 py-6 md:grid-cols-[1fr_auto]">
+                            <Link
+                                key={order._id}
+                                href={`/orders/${order._id}`}
+                                className="grid gap-4 py-6 transition hover:bg-neutral-50 md:grid-cols-[1fr_auto]"
+                            >
                                 <div>
                                     <p className="numeric mb-2 font-semibold">
                                         #{order._id.slice(-6).toUpperCase()}
@@ -84,10 +88,13 @@ export default async function OrdersPage() {
                                 <div className="md:text-right">
                                     <p className="numeric text-lg font-semibold">{money(order.total || 0)}</p>
                                     <p className="body-sm mt-2 text-muted">
-                                        {order.orderStatus || "pending"} · {order.paymentStatus || "pending"}
+                                        {formatOrderStatus(order.paymentStatus, order.orderStatus)}
+                                    </p>
+                                    <p className="label-caps mt-2 text-muted underline-offset-2 hover:text-ink">
+                                        View details
                                     </p>
                                 </div>
-                            </article>
+                            </Link>
                         ))}
                     </div>
                 )}

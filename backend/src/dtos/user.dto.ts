@@ -46,6 +46,23 @@ export const UpdateUserDto = z.object({
 });
 export type UpdateUserDto = z.infer<typeof UpdateUserDto>;
 
+export const ForgotPasswordDto = z.object({
+    email: z.email("Invalid email address"),
+});
+export type ForgotPasswordDto = z.infer<typeof ForgotPasswordDto>;
+
+export const ResetPasswordDto = z.object({
+    token: z.string().trim().regex(/^[0-9a-f]{64}$/, "Invalid reset token"),
+    password: BaseUserSchema.shape.password,
+});
+export type ResetPasswordDto = z.infer<typeof ResetPasswordDto>;
+
+export const ChangePasswordDto = z.object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: BaseUserSchema.shape.password,
+});
+export type ChangePasswordDto = z.infer<typeof ChangePasswordDto>;
+
 export const CreateAddressDto = AddressSchema;
 export type CreateAddressDto = z.infer<typeof CreateAddressDto>;
 

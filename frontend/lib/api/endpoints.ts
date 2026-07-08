@@ -7,16 +7,21 @@ export const API = {
         LOGIN_2FA: "/api/auth/login/2fa",
         GOOGLE: "/api/auth/google",
         LOGOUT: "/api/auth/logout",
+        FORGOT_PASSWORD: "/api/auth/forgot-password",
+        RESET_PASSWORD: "/api/auth/reset-password",
     },
     USER: {
         GET_PROFILE: "/api/users/me",
         UPDATE_PROFILE: "/api/users/me",
+        CHANGE_PASSWORD: "/api/users/me/password",
         ADD_ADDRESS: "/api/users/me/addresses",
         UPDATE_ADDRESS: (addressId: string) => `/api/users/me/addresses/${addressId}`,
         DELETE_ADDRESS: (addressId: string) => `/api/users/me/addresses/${addressId}`,
         TWO_FACTOR_SETUP: "/api/users/me/2fa/setup",
         TWO_FACTOR_ENABLE: "/api/users/me/2fa/enable",
         TWO_FACTOR_DISABLE: "/api/users/me/2fa/disable",
+        SESSIONS: "/api/users/me/sessions",
+        REVOKE_SESSION: (sessionId: string) => `/api/users/me/sessions/${sessionId}`,
     },
     PRODUCT: {
         GET_ALL: (
@@ -83,6 +88,7 @@ export const API = {
     },
     ORDER: {
         CHECKOUT: "/api/orders",
+        VERIFY_PAYMENT: "/api/orders/verify-payment",
         GET_MY_ORDERS: "/api/orders",
         GET_BY_ID: (id: string) => `/api/orders/${id}`,
     },
@@ -98,6 +104,27 @@ export const API = {
         ORDER: {
             GET_ALL: "/api/admin/orders",
             UPDATE_STATUS: (id: string) => `/api/admin/orders/${id}/status`,
+        },
+        ACTIVITY_LOGS: (
+            params?: {
+                email?: string;
+                action?: string;
+                status?: string;
+                page?: number;
+                limit?: number;
+            }
+        ) => {
+            if (!params) return "/api/admin/activity-logs";
+
+            const q = new URLSearchParams();
+            if (params.email) q.set("email", params.email);
+            if (params.action) q.set("action", params.action);
+            if (params.status) q.set("status", params.status);
+            if (params.page !== undefined) q.set("page", String(params.page));
+            if (params.limit !== undefined) q.set("limit", String(params.limit));
+
+            const query = q.toString();
+            return query ? `/api/admin/activity-logs?${query}` : "/api/admin/activity-logs";
         },
         DISCOUNT: {
             GET_ALL: "/api/admin/discounts",

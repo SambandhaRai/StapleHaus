@@ -1,17 +1,7 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from "crypto";
-import { TWO_FACTOR_ENC_KEY, JWT_SECRET } from "../config";
+import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
+import { TWO_FACTOR_ENC_KEY } from "../config";
 
-const resolveKey = (): Buffer => {
-    if (TWO_FACTOR_ENC_KEY) {
-        const key = Buffer.from(TWO_FACTOR_ENC_KEY, "hex");
-        if (key.length === 32) {
-            return key;
-        }
-    }
-    return createHash("sha256").update(JWT_SECRET).digest();
-};
-
-const key = resolveKey();
+const key = Buffer.from(TWO_FACTOR_ENC_KEY, "hex");
 
 export const encryptSecret = (plaintext: string): string => {
     const iv = randomBytes(12);

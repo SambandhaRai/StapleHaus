@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { loginUser, loginTwoFactor, registerUser, verifyOtp, resendOtp, googleLogin, logoutUser } from "../api/auth";
+import { loginUser, loginTwoFactor, registerUser, verifyOtp, resendOtp, googleLogin, logoutUser, forgotPassword, resetPassword } from "../api/auth";
 import {
     setAuthToken,
     setUserData,
@@ -179,6 +179,36 @@ export const handleGoogleLogin = async (credential: string) => {
         return {
             success: false,
             message: err.message || "Google Login Failed"
+        };
+    }
+}
+
+export const handleForgotPassword = async (email: string, captchaToken: string) => {
+    try {
+        const result = await forgotPassword(email, captchaToken);
+        return {
+            success: Boolean(result.success),
+            message: result.message || "If an account exists for that email, a reset link has been sent"
+        };
+    } catch (err: Error | any) {
+        return {
+            success: false,
+            message: err.message || "Could not send reset link"
+        };
+    }
+}
+
+export const handleResetPassword = async (token: string, password: string) => {
+    try {
+        const result = await resetPassword(token, password);
+        return {
+            success: Boolean(result.success),
+            message: result.message || "Password reset successfully"
+        };
+    } catch (err: Error | any) {
+        return {
+            success: false,
+            message: err.message || "Password reset failed"
         };
     }
 }

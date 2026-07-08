@@ -17,6 +17,22 @@ export const checkout = async (orderData: any) => {
     }
 }
 
+export const verifyPayment = async (data: string) => {
+    try {
+        const response = await axios.post(
+            API.ORDER.VERIFY_PAYMENT,
+            { data }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Payment verification failed"
+        );
+    }
+}
+
 export const getMyOrders = async () => {
     try {
         const response = await axios.get(

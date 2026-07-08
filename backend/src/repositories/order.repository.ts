@@ -8,16 +8,25 @@ type CreateOrderData = {
     subtotal: number;
     discount: { code?: string; amount: number };
     total: number;
+    transactionUuid: string;
     paymentStatus: PaymentStatusType;
     orderStatus: OrderStatusType;
+};
+
+type PaymentResult = {
+    paymentStatus: PaymentStatusType;
+    orderStatus: OrderStatusType;
+    paymentRef?: string;
 };
 
 export interface IOrderRepository {
     createOrder(data: CreateOrderData): Promise<IOrder>;
     getOrdersByUserId(userId: string): Promise<IOrder[]>;
     getOrderById(id: string): Promise<IOrder | null>;
+    getByTransactionUuid(transactionUuid: string): Promise<IOrder | null>;
     getAllOrders(): Promise<IOrder[]>;
     updateOrderStatus(id: string, orderStatus: OrderStatusType): Promise<IOrder | null>;
+    updatePaymentResult(id: string, result: PaymentResult): Promise<IOrder | null>;
 }
 
 export class OrderRepository implements IOrderRepository {
@@ -34,6 +43,10 @@ export class OrderRepository implements IOrderRepository {
         return await OrderModel.findById(id);
     }
 
+    async getByTransactionUuid(transactionUuid: string): Promise<IOrder | null> {
+        return await OrderModel.findOne({ transactionUuid });
+    }
+
     async getAllOrders(): Promise<IOrder[]> {
         return await OrderModel.find().sort({ createdAt: -1 });
     }
@@ -42,6 +55,14 @@ export class OrderRepository implements IOrderRepository {
         return await OrderModel.findByIdAndUpdate(
             id,
             { $set: { orderStatus } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async updatePaymentResult(id: string, result: PaymentResult): Promise<IOrder | null> {
+        return await OrderModel.findByIdAndUpdate(
+            id,
+            { $set: result },
             { returnDocument: "after" }
         );
     }
