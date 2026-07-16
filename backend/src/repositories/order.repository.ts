@@ -8,7 +8,8 @@ type CreateOrderData = {
     subtotal: number;
     discount: { code?: string; amount: number };
     total: number;
-    transactionUuid: string;
+    transactionUuid?: string;
+    paymentMethod?: string;
     paymentStatus: PaymentStatusType;
     orderStatus: OrderStatusType;
 };
@@ -25,8 +26,10 @@ export interface IOrderRepository {
     getOrderById(id: string): Promise<IOrder | null>;
     getByTransactionUuid(transactionUuid: string): Promise<IOrder | null>;
     getAllOrders(): Promise<IOrder[]>;
+    getExpiredPendingOrders(cutoff: Date): Promise<IOrder[]>;
     updateOrderStatus(id: string, orderStatus: OrderStatusType): Promise<IOrder | null>;
     updatePaymentResult(id: string, result: PaymentResult): Promise<IOrder | null>;
+    markExpiredIfPending(id: string): Promise<IOrder | null>;
 }
 
 export class OrderRepository implements IOrderRepository {
@@ -63,6 +66,22 @@ export class OrderRepository implements IOrderRepository {
         return await OrderModel.findByIdAndUpdate(
             id,
             { $set: result },
+            { returnDocument: "after" }
+        );
+    }
+
+    async getExpiredPendingOrders(cutoff: Date): Promise<IOrder[]> {
+        return await OrderModel.find({
+            paymentStatus: "pending",
+            paymentMethod: { $ne: "cod" },
+            createdAt: { $lt: cutoff },
+        });
+    }
+
+    async markExpiredIfPending(id: string): Promise<IOrder | null> {
+        return await OrderModel.findOneAndUpdate(
+            { _id: id, paymentStatus: "pending", paymentMethod: { $ne: "cod" } },
+            { $set: { paymentStatus: "failed", orderStatus: "cancelled" } },
             { returnDocument: "after" }
         );
     }

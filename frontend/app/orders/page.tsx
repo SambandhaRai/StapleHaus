@@ -15,6 +15,7 @@ type OrderRecord = {
     _id: string;
     items?: OrderItem[];
     total?: number;
+    paymentMethod?: string;
     paymentStatus?: string;
     orderStatus?: string;
     createdAt?: string;
@@ -88,7 +89,7 @@ export default async function OrdersPage() {
                                 <div className="md:text-right">
                                     <p className="numeric text-lg font-semibold">{money(order.total || 0)}</p>
                                     <p className="body-sm mt-2 text-muted">
-                                        {formatOrderStatus(order.paymentStatus, order.orderStatus)}
+                                        {formatOrderStatus(order.paymentStatus, order.orderStatus, order.paymentMethod)}
                                     </p>
                                     <p className="label-caps mt-2 text-muted underline-offset-2 hover:text-ink">
                                         View details

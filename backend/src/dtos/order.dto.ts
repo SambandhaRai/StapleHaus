@@ -4,6 +4,7 @@ import { OrderStatusEnum } from "../types/order.type";
 export const CheckoutDto = z.object({
     addressId: z.string().trim().min(1, "Shipping address is required"),
     discountCode: z.string().trim().optional(),
+    paymentMethod: z.enum(["esewa", "cod"]).default("esewa"),
 });
 export type CheckoutDto = z.infer<typeof CheckoutDto>;
 
