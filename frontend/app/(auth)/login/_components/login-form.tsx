@@ -12,7 +12,7 @@ import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { GoogleSignInButton } from "../../_components/google-sign-in-button";
-import { TurnstileWidget } from "../../_components/turnstile-widget";
+import { RecaptchaWidget } from "../../_components/recaptcha-widget";
 import { handleLogin } from "@/lib/actions/auth-action";
 
 const loginSchema = z.object({
@@ -22,7 +22,7 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 
 export function LoginForm() {
     const router = useRouter();
@@ -106,7 +106,7 @@ export function LoginForm() {
                     />
                 </div>
 
-                <TurnstileWidget
+                <RecaptchaWidget
                     key={captchaKey}
                     onVerify={setCaptchaToken}
                     onExpire={() => setCaptchaToken("")}

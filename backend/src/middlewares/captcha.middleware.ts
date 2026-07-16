@@ -1,10 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { TURNSTILE_SECRET } from "../config";
+import { RECAPTCHA_SECRET } from "../config";
 
-const VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+const VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify";
 
 export const verifyCaptcha = async (req: Request, res: Response, next: NextFunction) => {
-    if (!TURNSTILE_SECRET) {
+    if (!RECAPTCHA_SECRET) {
         return next();
     }
 
@@ -15,7 +15,7 @@ export const verifyCaptcha = async (req: Request, res: Response, next: NextFunct
 
     try {
         const params = new URLSearchParams();
-        params.append("secret", TURNSTILE_SECRET);
+        params.append("secret", RECAPTCHA_SECRET);
         params.append("response", token);
 
         const response = await fetch(VERIFY_URL, { method: "POST", body: params });

@@ -7,11 +7,11 @@ import { toast } from "react-toastify";
 import { BackButton } from "@/app/_components/back-button";
 import { Button } from "@/app/_components/button";
 import { OtpInput } from "../../_components/otp-input";
-import { TurnstileWidget } from "../../_components/turnstile-widget";
+import { RecaptchaWidget } from "../../_components/recaptcha-widget";
 import { handleResendOtp, handleVerifyOtp } from "@/lib/actions/auth-action";
 
 const RESEND_COOLDOWN = 30;
-const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 
 export function VerifyEmailForm() {
     const router = useRouter();
@@ -122,7 +122,7 @@ export function VerifyEmailForm() {
 
                     {cooldown > 0 ? null : (
                         <div className="mt-6">
-                            <TurnstileWidget key={captchaKey} onVerify={setCaptchaToken} />
+                            <RecaptchaWidget key={captchaKey} onVerify={setCaptchaToken} />
                         </div>
                     )}
 

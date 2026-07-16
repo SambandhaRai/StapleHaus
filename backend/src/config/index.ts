@@ -11,7 +11,7 @@ export const JWT_SECRET: string = jwtSecret;
 export const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || "30d";
 export const FRONTEND_URL: string = process.env.FRONTEND_URL || "http://localhost:3000";
 export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || "";
-export const TURNSTILE_SECRET: string = process.env.TURNSTILE_SECRET || "";
+export const RECAPTCHA_SECRET: string = process.env.RECAPTCHA_SECRET || "";
 const twoFactorEncKey = process.env.TWO_FACTOR_ENC_KEY;
 if (!twoFactorEncKey || !/^[0-9a-fA-F]{64}$/.test(twoFactorEncKey)) {
     throw new Error("TWO_FACTOR_ENC_KEY must be set to 64 hex characters (32 random bytes)");

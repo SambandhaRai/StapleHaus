@@ -2,9 +2,9 @@
 
 import { useEffect, useRef } from "react";
 
-const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-interface TurnstileApi {
+interface RecaptchaApi {
     render: (
         el: HTMLElement,
         options: {
@@ -14,38 +14,39 @@ interface TurnstileApi {
             "error-callback"?: () => void;
             theme?: string;
         },
-    ) => string;
-    remove: (id: string) => void;
+    ) => number;
+    reset: (id: number) => void;
 }
 
 declare global {
     interface Window {
-        turnstile?: TurnstileApi;
+        grecaptcha?: RecaptchaApi;
+        __onRecaptchaLoad?: () => void;
     }
 }
 
 let scriptPromise: Promise<void> | null = null;
 
-const loadTurnstile = (): Promise<void> => {
-    if (window.turnstile) return Promise.resolve();
+const loadRecaptcha = (): Promise<void> => {
+    if (window.grecaptcha?.render) return Promise.resolve();
     if (scriptPromise) return scriptPromise;
     scriptPromise = new Promise((resolve) => {
+        window.__onRecaptchaLoad = () => resolve();
         const script = document.createElement("script");
-        script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+        script.src = "https://www.google.com/recaptcha/api.js?render=explicit&onload=__onRecaptchaLoad";
         script.async = true;
         script.defer = true;
-        script.onload = () => resolve();
         document.body.appendChild(script);
     });
     return scriptPromise;
 };
 
-interface TurnstileWidgetProps {
+interface RecaptchaWidgetProps {
     onVerify: (token: string) => void;
     onExpire?: () => void;
 }
 
-export function TurnstileWidget({ onVerify, onExpire }: TurnstileWidgetProps) {
+export function RecaptchaWidget({ onVerify, onExpire }: RecaptchaWidgetProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const onVerifyRef = useRef(onVerify);
     const onExpireRef = useRef(onExpire);
@@ -60,12 +61,12 @@ export function TurnstileWidget({ onVerify, onExpire }: TurnstileWidgetProps) {
 
     useEffect(() => {
         if (!SITE_KEY) return;
-        let widgetId: string | null = null;
+        let widgetId: number | null = null;
         let cancelled = false;
 
-        loadTurnstile().then(() => {
-            if (cancelled || !window.turnstile || !containerRef.current) return;
-            widgetId = window.turnstile.render(containerRef.current, {
+        loadRecaptcha().then(() => {
+            if (cancelled || !window.grecaptcha || !containerRef.current) return;
+            widgetId = window.grecaptcha.render(containerRef.current, {
                 sitekey: SITE_KEY,
                 callback: (token) => onVerifyRef.current(token),
                 "expired-callback": () => onExpireRef.current?.(),
@@ -76,7 +77,7 @@ export function TurnstileWidget({ onVerify, onExpire }: TurnstileWidgetProps) {
 
         return () => {
             cancelled = true;
-            if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
+            if (widgetId !== null && window.grecaptcha) window.grecaptcha.reset(widgetId);
         };
     }, []);
 
