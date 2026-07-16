@@ -5,9 +5,16 @@ import { LogoutButton } from "@/app/_components/logout-button";
 import { TwoFactorManager } from "./_components/two-factor-manager";
 import { SessionsManager } from "./_components/sessions-manager";
 import { ChangePasswordManager } from "./_components/change-password-manager";
+import { PasswordExpiryBanner } from "./_components/password-expiry-banner";
 import { handleGetProfile, handleGetSessions } from "@/lib/actions/users-action";
 
-type ProfileUser = { name?: string; email?: string; twoFactorEnabled?: boolean; hasPassword?: boolean };
+type ProfileUser = {
+    name?: string;
+    email?: string;
+    twoFactorEnabled?: boolean;
+    hasPassword?: boolean;
+    passwordExpiresAt?: string | null;
+};
 
 const extractUser = (res: unknown): ProfileUser | null => {
     if (res && typeof res === "object" && "success" in res) {
@@ -52,6 +59,8 @@ export default async function AccountPage() {
                 <p className="eyebrow mb-3">Account</p>
                 <h1 className="h1 mb-2">Hi, {user.name}</h1>
                 <p className="body-sm mb-12 text-muted">{user.email}</p>
+
+                <PasswordExpiryBanner passwordExpiresAt={user.passwordExpiresAt} />
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Link

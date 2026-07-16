@@ -92,6 +92,12 @@ export const handleDisableTwoFactor = async (password: string) => {
 export const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     try {
         const result = await changePassword(currentPassword, newPassword);
+        if (result.success) {
+            const profile = await getProfile().catch(() => null);
+            if (profile?.success && profile.data) {
+                await setUserData(profile.data);
+            }
+        }
         return {
             success: Boolean(result.success),
             message: result.message,

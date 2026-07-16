@@ -4,7 +4,8 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
 import { CartProvider } from "./_components/cart-provider";
-import { getAuthToken } from "@/lib/cookie";
+import { PasswordExpiryDialog } from "./_components/password-expiry-dialog";
+import { getAuthToken, getUserData } from "@/lib/cookie";
 import { handleGetCart } from "@/lib/actions/cart-action";
 
 const extractCartCount = (res: unknown): number => {
@@ -45,6 +46,8 @@ export default async function RootLayout({
   const authToken = await getAuthToken();
   const cartRes = authToken ? await handleGetCart() : null;
   const initialCartCount = extractCartCount(cartRes);
+  const userData = authToken ? await getUserData() : null;
+  const passwordExpiresAt = typeof userData?.passwordExpiresAt === "string" ? userData.passwordExpiresAt : null;
 
   return (
     <html
@@ -55,6 +58,7 @@ export default async function RootLayout({
         <CartProvider initialCount={initialCartCount}>
           {children}
         </CartProvider>
+        <PasswordExpiryDialog passwordExpiresAt={passwordExpiresAt} />
         <ToastContainer
           position="top-right"
           autoClose={3000}

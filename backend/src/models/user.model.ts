@@ -1,5 +1,6 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { AddressType, UserRoleType } from "../types/user.type";
+import { computePasswordExpiresAt } from "../utils/password-age";
 
 export const AddressSchema: Schema = new Schema({
     label: { type: String, required: true, trim: true },
@@ -38,6 +39,11 @@ UserSchema.set("toJSON", {
     transform: (_doc, ret) => {
         const serialized = ret as Record<string, unknown>;
         serialized.hasPassword = Boolean(serialized.password);
+        serialized.passwordExpiresAt = computePasswordExpiresAt(
+            serialized.password as string | undefined,
+            serialized.passwordChangedAt as Date | undefined,
+            serialized.createdAt as Date | undefined,
+        );
         delete serialized.password;
         delete serialized.otpHash;
         delete serialized.otpExpiresAt;
