@@ -16,6 +16,10 @@ export const ActivityActionEnum = z.enum([
     "password_expired_challenge",
     "password_reset_request",
     "password_reset",
+    "order_placed",
+    "payment_verified",
+    "payment_failed",
+    "order_expired",
     "ip_access_add",
     "ip_access_remove",
 ]);

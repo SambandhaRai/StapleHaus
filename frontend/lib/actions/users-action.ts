@@ -1,6 +1,6 @@
 "use server";
 
-import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, changePassword, getSessions, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
+import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, changePassword, getSessions, getActivityLogs, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
 import { setUserData } from "../cookie";
 
 const getActionErrorMessage = (err: unknown, fallback: string) => {
@@ -106,6 +106,23 @@ export const handleChangePassword = async (currentPassword: string, newPassword:
         return {
             success: false,
             message: getActionErrorMessage(err, "Failed to change password"),
+        };
+    }
+};
+
+export const handleGetActivityLogs = async (page: number = 1, limit: number = 20) => {
+    try {
+        const result = await getActivityLogs(page, limit);
+        return {
+            success: Boolean(result.success),
+            data: result.data,
+            meta: result.meta,
+            message: result.message,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to load activity"),
         };
     }
 };

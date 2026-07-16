@@ -85,6 +85,15 @@ export const getSessions = async () => {
     }
 };
 
+export const getActivityLogs = async (page: number, limit: number) => {
+    try {
+        const response = await axios.get(API.USER.ACTIVITY_LOGS(page, limit));
+        return response.data;
+    } catch (err: unknown) {
+        throw new Error(getApiErrorMessage(err, "Failed to load activity"));
+    }
+};
+
 export const revokeSession = async (sessionId: string) => {
     try {
         const response = await axios.delete(API.USER.REVOKE_SESSION(sessionId));

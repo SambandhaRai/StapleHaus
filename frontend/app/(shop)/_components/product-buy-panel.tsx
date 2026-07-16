@@ -9,6 +9,8 @@ import { handleAddToWishlist, handleRemoveFromWishlist } from "@/lib/actions/wis
 import { useCart } from "@/app/_components/cart-provider";
 import { formatPrice as money } from "@/lib/format";
 
+const LOW_STOCK_THRESHOLD = 5;
+
 interface Variant {
     _id: string;
     size: string;
@@ -149,6 +151,14 @@ export function ProductBuyPanel({
                 ) : (
                     <p className="body-sm text-muted">Currently unavailable.</p>
                 )}
+
+                {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= LOW_STOCK_THRESHOLD ? (
+                    <p className="body-sm mt-3" style={{ color: "var(--color-danger)" }}>
+                        {selectedVariant.stock === 1
+                            ? "Last one left"
+                            : `Only ${selectedVariant.stock} left`}
+                    </p>
+                ) : null}
             </div>
 
             <button

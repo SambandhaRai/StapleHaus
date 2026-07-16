@@ -23,6 +23,8 @@ export const API = {
         TWO_FACTOR_DISABLE: "/api/users/me/2fa/disable",
         SESSIONS: "/api/users/me/sessions",
         REVOKE_SESSION: (sessionId: string) => `/api/users/me/sessions/${sessionId}`,
+        ACTIVITY_LOGS: (page: number, limit: number) =>
+            `/api/users/me/activity-logs?page=${page}&limit=${limit}`,
     },
     PRODUCT: {
         GET_ALL: (

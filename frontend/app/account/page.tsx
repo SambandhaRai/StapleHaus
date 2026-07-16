@@ -99,6 +99,15 @@ export default async function AccountPage() {
                         <TwoFactorManager initialEnabled={Boolean(user.twoFactorEnabled)} />
                         {user.hasPassword && <ChangePasswordManager />}
                         <SessionsManager initialSessions={sessions} />
+                        <Link
+                            href="/account/activity"
+                            className="block border border-border p-6 transition hover:border-ink"
+                        >
+                            <h2 className="h4 mb-1">Recent activity</h2>
+                            <p className="body-sm text-muted">
+                                Review sign-ins, password changes, and order events on your account.
+                            </p>
+                        </Link>
                     </div>
                 </div>
 
