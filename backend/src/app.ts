@@ -80,7 +80,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(ipAccessMiddleware);
 app.use(globalLimiter);
 
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: "100kb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
     setHeaders: (res) => {
         res.setHeader("X-Content-Type-Options", "nosniff");
