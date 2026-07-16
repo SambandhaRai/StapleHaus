@@ -104,6 +104,14 @@ export const twoFactorManageLimiter = rateLimit({
     skipSuccessfulRequests: true,
 });
 
+export const expiredPasswordLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 6,
+    keyGenerator: byClientIp,
+    skipSuccessfulRequests: true,
+});
+
 export const passwordChangeLimiter = rateLimit({
     ...baseOptions,
     windowMs: 15 * 60 * 1000,

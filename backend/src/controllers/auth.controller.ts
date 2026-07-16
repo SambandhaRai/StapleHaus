@@ -1,5 +1,5 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangeExpiredPasswordDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { ActivityLogService } from "../services/activity-log.service";
 import { SessionService } from "../services/session.service";
@@ -51,6 +51,14 @@ export class AuthController {
                     message: "Enter your authentication code"
                 });
             }
+            if (result.passwordExpired) {
+                return res.status(200).json({
+                    success: true,
+                    passwordExpired: true,
+                    expiredToken: result.expiredToken,
+                    message: "Your password has expired. Please set a new one."
+                });
+            }
             return res.status(200).json({
                 success: true,
                 data: result.user,
@@ -71,12 +79,41 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { token, user } = await userService.loginWithTwoFactor(parsedData.data, getRequestContext(req));
+            const result = await userService.loginWithTwoFactor(parsedData.data, getRequestContext(req));
+            if (result.passwordExpired) {
+                return res.status(200).json({
+                    success: true,
+                    passwordExpired: true,
+                    expiredToken: result.expiredToken,
+                    message: "Your password has expired. Please set a new one."
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                data: result.user,
+                token: result.token,
+                message: "Login successful"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async changeExpiredPassword(req: Request, res: Response) {
+        try {
+            const parsedData = ChangeExpiredPasswordDto.safeParse(req.body);
+            if (!parsedData.success) {
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+            const { token, user } = await userService.changeExpiredPassword(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data: user,
                 token,
-                message: "Login successful"
+                message: "Password updated successfully"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);

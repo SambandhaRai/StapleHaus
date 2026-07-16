@@ -50,6 +50,22 @@ export const loginTwoFactor = async (challengeToken: string, code: string) => {
     }
 }
 
+export const changeExpiredPassword = async (expiredToken: string, newPassword: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.PASSWORD_EXPIRED,
+            { expiredToken, newPassword }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Could not update password"
+        );
+    }
+}
+
 export const verifyOtp = async (email: string, otp: string) => {
     try {
         const response = await axios.post(

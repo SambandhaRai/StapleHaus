@@ -63,6 +63,12 @@ export const ChangePasswordDto = z.object({
 });
 export type ChangePasswordDto = z.infer<typeof ChangePasswordDto>;
 
+export const ChangeExpiredPasswordDto = z.object({
+    expiredToken: z.string().trim().min(1, "Session token is required"),
+    newPassword: BaseUserSchema.shape.password,
+});
+export type ChangeExpiredPasswordDto = z.infer<typeof ChangeExpiredPasswordDto>;
+
 export const CreateAddressDto = AddressSchema;
 export type CreateAddressDto = z.infer<typeof CreateAddressDto>;
 

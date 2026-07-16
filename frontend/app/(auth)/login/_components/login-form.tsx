@@ -47,6 +47,10 @@ export function LoginForm() {
             router.push("/login/2fa");
             return;
         }
+        if (res.success && res.passwordExpired) {
+            router.push("/login/password-expired");
+            return;
+        }
         if (res.success) {
             toast.success("Welcome back!");
             router.push(res.data?.role === "admin" ? "/admin" : "/");

@@ -98,3 +98,24 @@ export const clearTwoFactorChallenge = async () => {
     const cookieStore = await cookies();
     cookieStore.delete("twofa_challenge");
 };
+
+export const setPasswordExpiredChallenge = async (expiredToken: string) => {
+    const cookieStore = await cookies();
+    cookieStore.set("password_expired", expiredToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 10,
+    });
+};
+
+export const getPasswordExpiredChallenge = async () => {
+    const cookieStore = await cookies();
+    return cookieStore.get("password_expired")?.value || null;
+};
+
+export const clearPasswordExpiredChallenge = async () => {
+    const cookieStore = await cookies();
+    cookieStore.delete("password_expired");
+};

@@ -5,6 +5,7 @@ export const API = {
         RESEND_OTP: "/api/auth/resend-otp",
         LOGIN: "/api/auth/login",
         LOGIN_2FA: "/api/auth/login/2fa",
+        PASSWORD_EXPIRED: "/api/auth/login/password-expired",
         GOOGLE: "/api/auth/google",
         LOGOUT: "/api/auth/logout",
         FORGOT_PASSWORD: "/api/auth/forgot-password",

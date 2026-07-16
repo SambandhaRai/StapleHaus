@@ -1,7 +1,7 @@
 "use server";
 
 import { randomUUID } from "crypto";
-import { loginUser, loginTwoFactor, registerUser, verifyOtp, resendOtp, googleLogin, logoutUser, forgotPassword, resetPassword } from "../api/auth";
+import { loginUser, loginTwoFactor, changeExpiredPassword, registerUser, verifyOtp, resendOtp, googleLogin, logoutUser, forgotPassword, resetPassword } from "../api/auth";
 import {
     setAuthToken,
     setUserData,
@@ -12,6 +12,9 @@ import {
     setTwoFactorChallenge,
     getTwoFactorChallenge,
     clearTwoFactorChallenge,
+    setPasswordExpiredChallenge,
+    getPasswordExpiredChallenge,
+    clearPasswordExpiredChallenge,
 } from "../cookie";
 
 export const handleRegister = async (formData: any) => {
@@ -88,6 +91,14 @@ export const handleLogin = async (formData: any) => {
                 message: "Enter your authentication code"
             };
         }
+        if (result.success && result.passwordExpired) {
+            await setPasswordExpiredChallenge(result.expiredToken);
+            return {
+                success: true,
+                passwordExpired: true,
+                message: result.message || "Your password has expired"
+            };
+        }
         if (result.success) {
             await setAuthToken(result.token);
             await setUserData(result.data);
@@ -120,6 +131,15 @@ export const handleVerifyLoginTwoFactor = async (code: string) => {
             };
         }
         const result = await loginTwoFactor(challengeToken, code);
+        if (result.success && result.passwordExpired) {
+            await clearTwoFactorChallenge();
+            await setPasswordExpiredChallenge(result.expiredToken);
+            return {
+                success: true,
+                passwordExpired: true,
+                message: result.message || "Your password has expired"
+            };
+        }
         if (result.success) {
             await setAuthToken(result.token);
             await setUserData(result.data);
@@ -139,6 +159,39 @@ export const handleVerifyLoginTwoFactor = async (code: string) => {
         return {
             success: false,
             message: err.message || "Login Failed"
+        };
+    }
+}
+
+export const handleChangeExpiredPassword = async (newPassword: string) => {
+    try {
+        const expiredToken = await getPasswordExpiredChallenge();
+        if (!expiredToken) {
+            return {
+                success: false,
+                message: "Your sign-in session expired, please sign in again"
+            };
+        }
+        const result = await changeExpiredPassword(expiredToken, newPassword);
+        if (result.success) {
+            await clearPasswordExpiredChallenge();
+            await setAuthToken(result.token);
+            await setUserData(result.data);
+
+            return {
+                success: true,
+                data: result.data,
+                message: "Password updated successfully"
+            };
+        }
+        return {
+            success: false,
+            message: result.message || "Could not update password"
+        };
+    } catch (err: Error | any) {
+        return {
+            success: false,
+            message: err.message || "Could not update password"
         };
     }
 }

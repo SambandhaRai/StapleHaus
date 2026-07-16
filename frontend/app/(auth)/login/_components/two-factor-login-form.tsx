@@ -29,6 +29,11 @@ export function TwoFactorLoginForm() {
         const res = await handleVerifyLoginTwoFactor(trimmed);
         setVerifying(false);
 
+        if (res.success && res.passwordExpired) {
+            router.push("/login/password-expired");
+            return;
+        }
+
         if (res.success) {
             toast.success("Welcome back!");
             router.push(res.data?.role === "admin" ? "/admin" : "/");

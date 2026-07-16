@@ -9,6 +9,9 @@ if (!jwtSecret || jwtSecret.length < 32) {
 }
 export const JWT_SECRET: string = jwtSecret;
 export const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || "30d";
+const passwordMaxAgeDays = Number(process.env.PASSWORD_MAX_AGE_DAYS);
+export const PASSWORD_MAX_AGE_DAYS: number =
+    Number.isFinite(passwordMaxAgeDays) && passwordMaxAgeDays >= 0 ? passwordMaxAgeDays : 90;
 export const FRONTEND_URL: string = process.env.FRONTEND_URL || "http://localhost:3000";
 export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || "";
 export const RECAPTCHA_SECRET: string = process.env.RECAPTCHA_SECRET || "";
