@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { toast } from "react-toastify";
 import { X } from "lucide-react";
 import { ProductCard } from "@/app/(shop)/_components/product-card";
-import { handleRemoveFromWishlist } from "@/lib/actions/wishlist-action";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface WishlistProduct {
     _id: string;
@@ -24,19 +23,15 @@ interface WishlistGridProps {
 }
 
 export function WishlistGrid({ items }: WishlistGridProps) {
-    const [products, setProducts] = useState(items);
+    const { isWishlisted, remove } = useWishlist();
     const [removing, setRemoving] = useState<string | null>(null);
 
-    const remove = async (productId: string) => {
+    const products = items.filter((product) => isWishlisted(product._id));
+
+    const onRemove = async (productId: string) => {
         setRemoving(productId);
-        const res = await handleRemoveFromWishlist(productId);
+        await remove(productId);
         setRemoving(null);
-        if (res.success) {
-            setProducts((current) => current.filter((p) => p._id !== productId));
-            toast.success(res.message || "Removed from wishlist");
-        } else {
-            toast.error(res.message || "Failed to remove item");
-        }
     };
 
     if (products.length === 0) {
@@ -59,14 +54,14 @@ export function WishlistGrid({ items }: WishlistGridProps) {
                 <div key={product._id} className="group relative">
                     <button
                         type="button"
-                        onClick={() => remove(product._id)}
+                        onClick={() => onRemove(product._id)}
                         disabled={removing === product._id}
                         aria-label="Remove from wishlist"
                         className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center border border-border bg-paper/90 text-ink backdrop-blur transition hover:bg-ink hover:text-paper disabled:opacity-50"
                     >
                         <X size={15} strokeWidth={1.5} />
                     </button>
-                    <ProductCard product={product} loggedIn showWishlistButton={false} />
+                    <ProductCard product={product} showWishlistButton={false} />
                 </div>
             ))}
         </div>

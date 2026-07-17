@@ -6,8 +6,6 @@ import { ProductCarousel } from "./product-carousel";
 import { getUploadUrl } from "@/lib/uploads";
 import { handleGetProducts } from "@/lib/actions/products-action";
 import { handleGetCategories } from "@/lib/actions/categories-action";
-import { handleGetWishlist } from "@/lib/actions/wishlist-action";
-import { getAuthToken } from "@/lib/cookie";
 
 interface LandingProduct {
     _id?: string;
@@ -48,36 +46,14 @@ const extractCategories = (res: unknown): CategoryRecord[] => {
     return [];
 };
 
-const extractWishlistProductIds = (res: unknown): string[] => {
-    if (res && typeof res === "object" && "success" in res) {
-        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
-        if (r.success && Array.isArray(r.data?.productIds)) {
-            return r.data.productIds
-                .map((item) => {
-                    if (item && typeof item === "object" && "_id" in item) {
-                        return String((item as { _id: unknown })._id);
-                    }
-                    return String(item);
-                })
-                .filter(Boolean);
-        }
-    }
-    return [];
-};
-
 export async function ShopLanding({ gender }: ShopLandingProps) {
-    const authToken = await getAuthToken();
-    const loggedIn = Boolean(authToken);
-
-    const [productsRes, categoriesRes, wishlistRes] = await Promise.all([
+    const [productsRes, categoriesRes] = await Promise.all([
         handleGetProducts({ gender, sort: "newest", limit: 50 }),
         handleGetCategories(),
-        loggedIn ? handleGetWishlist() : Promise.resolve(null),
     ]);
 
     const products = extractProducts(productsRes);
     const categories = extractCategories(categoriesRes);
-    const wishlistedProductIds = extractWishlistProductIds(wishlistRes);
 
     const landingPath = gender === "m" ? "/men" : "/women";
     const shopBase = `${landingPath}/shop`;
@@ -146,11 +122,7 @@ export async function ShopLanding({ gender }: ShopLandingProps) {
                     <Link className="label-caps link-underline" href={shopBase}>View all</Link>
                 </div>
                 {newArrivals.length > 0 ? (
-                    <ProductCarousel
-                        products={newArrivals}
-                        loggedIn={loggedIn}
-                        wishlistedProductIds={wishlistedProductIds}
-                    />
+                    <ProductCarousel products={newArrivals} />
                 ) : (
                     <p className="body-sm text-muted">No products available right now.</p>
                 )}

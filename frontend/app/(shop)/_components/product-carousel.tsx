@@ -18,15 +18,11 @@ interface CarouselProduct {
 interface ProductCarouselProps {
     products: CarouselProduct[];
     priorityCount?: number;
-    loggedIn?: boolean;
-    wishlistedProductIds?: string[];
 }
 
 export function ProductCarousel({
     products,
     priorityCount = 0,
-    loggedIn = false,
-    wishlistedProductIds = [],
 }: ProductCarouselProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -50,8 +46,6 @@ export function ProductCarousel({
                         <ProductCard
                             product={product}
                             priority={index < priorityCount}
-                            loggedIn={loggedIn}
-                            initialWishlisted={Boolean(product._id && wishlistedProductIds.includes(product._id))}
                         />
                     </div>
                 ))}

@@ -6,7 +6,7 @@ import { toast } from "react-toastify";
 import Link from "next/link";
 import { User } from "lucide-react";
 import { handleLogout } from "@/lib/actions/auth-action";
-import { useCart } from "@/app/_components/cart-provider";
+import { useCart } from "@/context/CartContext";
 
 interface AccountMenuProps {
     userName?: string | null;

@@ -3,12 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toast } from "react-toastify";
 import { Heart } from "lucide-react";
 import { getUploadUrl } from "@/lib/uploads";
 import { formatPrice as money } from "@/lib/format";
-import { handleAddToWishlist, handleRemoveFromWishlist } from "@/lib/actions/wishlist-action";
+import { useWishlist } from "@/context/WishlistContext";
 
 interface ProductCardProduct {
     _id?: string;
@@ -23,25 +21,22 @@ interface ProductCardProduct {
 interface ProductCardProps {
     product: ProductCardProduct;
     priority?: boolean;
-    loggedIn?: boolean;
-    initialWishlisted?: boolean;
     showWishlistButton?: boolean;
 }
 
 export function ProductCard({
     product,
     priority = false,
-    loggedIn = false,
-    initialWishlisted = false,
     showWishlistButton = true,
 }: ProductCardProps) {
-    const router = useRouter();
+    const { isWishlisted, toggle } = useWishlist();
     const brandObj =
         product.brand && typeof product.brand === "object" ? product.brand : undefined;
     const brandName = brandObj?.name;
     const image = getUploadUrl(product.images?.[0]);
-    const [wishlisted, setWishlisted] = useState(initialWishlisted);
     const [wishing, setWishing] = useState(false);
+
+    const wishlisted = Boolean(product._id && isWishlisted(product._id));
 
     const genderSegment = product.gender === "f" ? "women" : "men";
     const href = brandObj?.slug
@@ -49,25 +44,11 @@ export function ProductCard({
         : `/${genderSegment}/brands/unknown/${product.slug}`;
 
     const handleWishlist = async () => {
-        if (!loggedIn) {
-            router.push("/login");
-            return;
-        }
         if (!product._id || wishing) return;
 
         setWishing(true);
-        const result = wishlisted
-            ? await handleRemoveFromWishlist(product._id)
-            : await handleAddToWishlist(product._id);
+        await toggle({ _id: product._id, name: product.name });
         setWishing(false);
-
-        if (!result.success) {
-            toast.error(result.message || "Could not update wishlist");
-            return;
-        }
-
-        setWishlisted((current) => !current);
-        toast.success(result.message || (wishlisted ? "Removed from wishlist" : "Added to wishlist"));
     };
 
     return (

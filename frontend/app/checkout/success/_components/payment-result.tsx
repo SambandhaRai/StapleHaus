@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { handleVerifyPayment } from "@/lib/actions/orders-action";
-import { useCart } from "@/app/_components/cart-provider";
+import { useCart } from "@/context/CartContext";
 
 type VerifyState = "verifying" | "success" | "failed";
 

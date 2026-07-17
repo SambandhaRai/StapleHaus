@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useState } from "react";
 import { handleGetCart } from "@/lib/actions/cart-action";
 
 interface CartContextValue {
@@ -30,10 +30,12 @@ export function CartProvider({
     children: React.ReactNode;
 }) {
     const [count, setCount] = useState(initialCount);
+    const [syncedCount, setSyncedCount] = useState(initialCount);
 
-    useEffect(() => {
+    if (syncedCount !== initialCount) {
+        setSyncedCount(initialCount);
         setCount(initialCount);
-    }, [initialCount]);
+    }
 
     const addToCount = useCallback((delta: number) => {
         setCount((current) => Math.max(0, current + delta));
