@@ -25,7 +25,8 @@ router.post("/login/2fa", twoFactorLimiter, authController.loginTwoFactor);
 router.post("/login/password-expired", expiredPasswordLimiter, authController.changeExpiredPassword);
 router.post("/forgot-password", forgotPasswordLimiter, verifyCaptcha, authController.forgotPassword);
 router.post("/reset-password", resetPasswordLimiter, authController.resetPassword);
-router.post("/google", googleLimiter, authController.googleLogin);
+router.get("/google/start", googleLimiter, authController.googleStart);
+router.post("/google/callback", googleLimiter, authController.googleCallback);
 router.post("/logout", authorizedMiddleware, authController.logout);
 
 export default router;

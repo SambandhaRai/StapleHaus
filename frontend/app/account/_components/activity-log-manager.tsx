@@ -30,6 +30,8 @@ const ACTION_LABELS: Record<string, string> = {
     login_failed: "Failed sign-in attempt",
     account_locked: "Account locked",
     google_login: "Signed in with Google",
+    google_register: "Account created with Google",
+    google_login_failed: "Failed Google sign-in attempt",
     logout: "Signed out",
     otp_verify: "Email verification code checked",
     otp_resend: "Verification code resent",

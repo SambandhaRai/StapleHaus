@@ -1,8 +1,9 @@
 import { handleControllerError } from "../errors/handle-controller-error";
-import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangeExpiredPasswordDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
+import { RegisterUserDto, LoginUserDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangeExpiredPasswordDto, ForgotPasswordDto, ResetPasswordDto, GoogleCallbackDto } from "../dtos/user.dto";
 import { UserService } from "../services/user.service";
 import { ActivityLogService } from "../services/activity-log.service";
 import { SessionService } from "../services/session.service";
+import { GoogleService } from "../services/google.service";
 import { getRequestContext } from "../utils/request-context";
 import { Request, Response } from "express";
 import z from "zod";
@@ -10,6 +11,7 @@ import z from "zod";
 let userService = new UserService();
 let activityLogService = new ActivityLogService();
 let sessionService = new SessionService();
+let googleService = new GoogleService();
 
 export class AuthController {
 
@@ -160,29 +162,101 @@ export class AuthController {
         }
     }
 
-    async googleLogin(req: Request, res: Response) {
+    async googleStart(req: Request, res: Response) {
         try {
-            const { credential, nonce } = req.body;
-            if (!credential || typeof credential !== "string") {
-                return res.status(400).json({
+            if (!googleService.isConfigured()) {
+                return res.status(503).json({
                     success: false,
-                    message: "Missing Google credential"
+                    message: "Google sign-in is not configured on this server"
                 });
             }
-            if (!nonce || typeof nonce !== "string") {
-                return res.status(400).json({
-                    success: false,
-                    message: "Missing Google sign-in nonce"
-                });
-            }
-            const { token, user } = await userService.loginWithGoogle(credential, nonce, getRequestContext(req));
+            const state = googleService.createStateToken();
             return res.status(200).json({
                 success: true,
-                data: user,
-                token,
+                data: {
+                    url: googleService.getAuthUrl(state),
+                    state
+                },
+                message: "Google sign-in started"
+            });
+        } catch (error: Error | any) {
+            return handleControllerError(res, error);
+        }
+    }
+
+    async googleCallback(req: Request, res: Response) {
+        const context = getRequestContext(req);
+        try {
+            if (!googleService.isConfigured()) {
+                return res.status(503).json({
+                    success: false,
+                    message: "Google sign-in is not configured on this server"
+                });
+            }
+
+            const parsedData = GoogleCallbackDto.safeParse(req.body);
+            if (!parsedData.success) {
+                await activityLogService.record({
+                    ...context,
+                    action: "google_login_failed",
+                    status: "failure",
+                    reason: "invalid_callback",
+                });
+                return res.status(400).json({
+                    success: false,
+                    errors: z.prettifyError(parsedData.error)
+                });
+            }
+
+            const { code, state, stateCookie } = parsedData.data;
+
+            if (state !== stateCookie) {
+                await activityLogService.record({
+                    ...context,
+                    action: "google_login_failed",
+                    status: "failure",
+                    reason: "state_mismatch",
+                });
+                return res.status(400).json({
+                    success: false,
+                    message: "Google sign-in could not be verified, please try again"
+                });
+            }
+
+            googleService.verifyStateToken(stateCookie);
+
+            const identity = await googleService.exchangeCode(code);
+            const result = await userService.loginWithGoogle(identity, context);
+
+            if (result.twoFactorRequired) {
+                return res.status(200).json({
+                    success: true,
+                    twoFactorRequired: true,
+                    challengeToken: result.challengeToken,
+                    message: "Enter your authentication code"
+                });
+            }
+            if (result.passwordExpired) {
+                return res.status(200).json({
+                    success: true,
+                    passwordExpired: true,
+                    expiredToken: result.expiredToken,
+                    message: "Your password has expired. Please set a new one."
+                });
+            }
+            return res.status(200).json({
+                success: true,
+                data: result.user,
+                token: result.token,
                 message: "Login successful"
             });
         } catch (error: Error | any) {
+            await activityLogService.record({
+                ...context,
+                action: "google_login_failed",
+                status: "failure",
+                reason: `error_${error.statusCode || 500}`,
+            });
             return handleControllerError(res, error);
         }
     }

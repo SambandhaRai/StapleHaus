@@ -1,14 +1,13 @@
 "use server";
 
-import { randomUUID } from "crypto";
-import { loginUser, loginTwoFactor, changeExpiredPassword, registerUser, verifyOtp, resendOtp, googleLogin, logoutUser, forgotPassword, resetPassword } from "../api/auth";
+import { loginUser, loginTwoFactor, changeExpiredPassword, registerUser, verifyOtp, resendOtp, googleStart, googleCallback, logoutUser, forgotPassword, resetPassword } from "../api/auth";
 import {
     setAuthToken,
     setUserData,
     clearAuthCookies,
-    setGoogleNonce,
-    getGoogleNonce,
-    clearGoogleNonce,
+    setGoogleState,
+    getGoogleState,
+    clearGoogleState,
     setTwoFactorChallenge,
     getTwoFactorChallenge,
     clearTwoFactorChallenge,
@@ -196,23 +195,41 @@ export const handleChangeExpiredPassword = async (newPassword: string) => {
     }
 }
 
-export const prepareGoogleSignIn = async () => {
-    const nonce = `${randomUUID()}${randomUUID()}`;
-    await setGoogleNonce(nonce);
-    return nonce;
+export const startGoogleLogin = async () => {
+    const result = await googleStart();
+    await setGoogleState(result.data.state);
+    return result.data.url as string;
 }
 
-export const handleGoogleLogin = async (credential: string) => {
+export const completeGoogleLogin = async (code: string, state: string) => {
     try {
-        const nonce = await getGoogleNonce();
-        if (!nonce) {
+        const stateCookie = await getGoogleState();
+        if (!stateCookie) {
             return {
                 success: false,
                 message: "Your Google sign-in expired, please try again"
             };
         }
-        const result = await googleLogin(credential, nonce);
-        await clearGoogleNonce();
+
+        const result = await googleCallback(code, state, stateCookie);
+        await clearGoogleState();
+
+        if (result.success && result.twoFactorRequired) {
+            await setTwoFactorChallenge(result.challengeToken);
+            return {
+                success: true,
+                twoFactorRequired: true,
+                message: "Enter your authentication code"
+            };
+        }
+        if (result.success && result.passwordExpired) {
+            await setPasswordExpiredChallenge(result.expiredToken);
+            return {
+                success: true,
+                passwordExpired: true,
+                message: result.message || "Your password has expired"
+            };
+        }
         if (result.success) {
             await setAuthToken(result.token);
             await setUserData(result.data);
@@ -228,7 +245,7 @@ export const handleGoogleLogin = async (credential: string) => {
             message: result.message || "Google Login Failed"
         };
     } catch (err: Error | any) {
-        await clearGoogleNonce();
+        await clearGoogleState();
         return {
             success: false,
             message: err.message || "Google Login Failed"

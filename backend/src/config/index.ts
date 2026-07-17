@@ -14,6 +14,9 @@ export const PASSWORD_MAX_AGE_DAYS: number =
     Number.isFinite(passwordMaxAgeDays) && passwordMaxAgeDays >= 0 ? passwordMaxAgeDays : 90;
 export const FRONTEND_URL: string = process.env.FRONTEND_URL || "http://localhost:3000";
 export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || "";
+export const GOOGLE_CLIENT_SECRET: string = process.env.GOOGLE_CLIENT_SECRET || "";
+export const GOOGLE_CALLBACK_URL: string =
+    process.env.GOOGLE_CALLBACK_URL || `${FRONTEND_URL}/api/auth/google/callback`;
 export const RECAPTCHA_SECRET: string = process.env.RECAPTCHA_SECRET || "";
 const twoFactorEncKey = process.env.TWO_FACTOR_ENC_KEY;
 if (!twoFactorEncKey || !/^[0-9a-fA-F]{64}$/.test(twoFactorEncKey)) {

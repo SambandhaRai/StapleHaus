@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,10 +24,18 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 
-export function LoginForm() {
+export function LoginForm({ error }: { error?: string }) {
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState("");
     const [captchaKey, setCaptchaKey] = useState(0);
+    const shownError = useRef<string>("");
+
+    useEffect(() => {
+        if (!error || shownError.current === error) return;
+        shownError.current = error;
+        toast.error(error);
+        router.replace("/login");
+    }, [error, router]);
 
     const {
         register,

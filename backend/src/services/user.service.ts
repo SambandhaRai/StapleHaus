@@ -1,7 +1,7 @@
 import { UserRepository } from "../repositories/user.repository";
 import { IUser } from "../models/user.model";
 import { HttpError } from "../errors/http-error";
-import { JWT_SECRET, JWT_EXPIRES_IN, GOOGLE_CLIENT_ID, FRONTEND_URL } from "../config";
+import { JWT_SECRET, JWT_EXPIRES_IN, FRONTEND_URL } from "../config";
 import { computePasswordExpiresAt } from "../utils/password-age";
 import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangePasswordDto, ChangeExpiredPasswordDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
 import { sendEmail } from "../config/email";
@@ -9,13 +9,13 @@ import { encryptSecret, decryptSecret } from "../utils/crypto";
 import { isPasswordBreached } from "../utils/pwned";
 import { ActivityLogService } from "./activity-log.service";
 import { SessionService } from "./session.service";
+import { GoogleIdentity } from "./google.service";
 import { RequestContext } from "../types/activity-log.type";
 import { logger } from "../utils/logger";
 import mongoose from "mongoose";
 import bcryptjs from "bcryptjs";
 import jwt, { SignOptions } from "jsonwebtoken";
 import { randomInt, randomBytes, createHash } from "crypto";
-import { OAuth2Client } from "google-auth-library";
 import * as OTPAuth from "otpauth";
 
 const TWO_FACTOR_ISSUER = "StapleHaus";
@@ -39,7 +39,6 @@ const createTotp = (base32Secret: string, label?: string) =>
 let userRepository = new UserRepository();
 let activityLogService = new ActivityLogService();
 let sessionService = new SessionService();
-let googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 const isDuplicateKeyError = (error: unknown) =>
     typeof error === "object"
@@ -569,61 +568,41 @@ export class UserService {
         return true;
     }
 
-    private async verifyGoogleToken(idToken: string, expectedNonce: string) {
-        if (!GOOGLE_CLIENT_ID) {
-            throw new HttpError(500, "Google sign-in is not configured");
-        }
+    async loginWithGoogle(identity: GoogleIdentity, context: RequestContext = {}) {
+        let created = false;
+        let linked = false;
 
-        let payload;
-        try {
-            const ticket = await googleClient.verifyIdToken({
-                idToken,
-                audience: GOOGLE_CLIENT_ID,
-            });
-            payload = ticket.getPayload();
-        } catch {
-            throw new HttpError(401, "Invalid Google credential");
-        }
-
-        if (!payload || !payload.email || !payload.sub) {
-            throw new HttpError(401, "Invalid Google credential");
-        }
-        if (!payload.email_verified) {
-            throw new HttpError(401, "Google email is not verified");
-        }
-        if (!expectedNonce || payload.nonce !== expectedNonce) {
-            throw new HttpError(401, "Google sign-in could not be verified, please try again");
-        }
-
-        return { email: payload.email, name: payload.name, googleId: payload.sub };
-    }
-
-    async loginWithGoogle(idToken: string, expectedNonce: string, context: RequestContext = {}) {
-        const profile = await this.verifyGoogleToken(idToken, expectedNonce);
-
-        let user = await userRepository.getUserByGoogleId(profile.googleId);
+        let user = await userRepository.getUserByGoogleId(identity.googleId);
         if (!user) {
-            user = await userRepository.getUserByEmail(profile.email);
-            if (user) {
-                if (user.googleId && user.googleId !== profile.googleId) {
+            const existingUser = await userRepository.getUserByEmail(identity.email);
+            if (existingUser) {
+                if (existingUser.googleId && existingUser.googleId !== identity.googleId) {
                     throw new HttpError(409, "This email is already linked to another Google account");
                 }
+                if (!identity.emailVerified) {
+                    throw new HttpError(401, "Your Google account has not verified this email address, so it cannot be linked to an existing StapleHaus account");
+                }
 
-                user = await userRepository.linkGoogleAccount(user._id.toString(), profile.googleId);
+                user = await userRepository.linkGoogleAccount(existingUser._id.toString(), identity.googleId);
+                linked = true;
             } else {
+                if (!identity.emailVerified) {
+                    throw new HttpError(401, "Your Google account has not verified this email address, so it cannot be used to sign in");
+                }
                 try {
                     user = await userRepository.createUser({
-                        name: profile.name || profile.email.split("@")[0],
-                        email: profile.email,
-                        googleId: profile.googleId,
+                        name: identity.name,
+                        email: identity.email,
+                        googleId: identity.googleId,
                         isEmailVerified: true,
                     });
+                    created = true;
                 } catch (error: unknown) {
                     if (!isDuplicateKeyError(error)) {
                         throw error;
                     }
-                    user = await userRepository.getUserByGoogleId(profile.googleId)
-                        ?? await userRepository.getUserByEmail(profile.email);
+                    user = await userRepository.getUserByGoogleId(identity.googleId)
+                        ?? await userRepository.getUserByEmail(identity.email);
                 }
             }
         }
@@ -632,17 +611,50 @@ export class UserService {
             throw new HttpError(500, "Unable to sign in with Google");
         }
 
+        const userId = user._id.toString();
+
+        if (user.twoFactorEnabled) {
+            await activityLogService.record({
+                ...context,
+                action: "twofa_challenge",
+                status: "success",
+                userId,
+                email: user.email,
+            });
+            return {
+                twoFactorRequired: true as const,
+                passwordExpired: false as const,
+                challengeToken: this.createChallengeToken(user),
+            };
+        }
+
+        if (this.isPasswordExpired(user)) {
+            await activityLogService.record({
+                ...context,
+                action: "password_expired_challenge",
+                status: "success",
+                userId,
+                email: user.email,
+            });
+            return {
+                twoFactorRequired: false as const,
+                passwordExpired: true as const,
+                expiredToken: this.createPasswordExpiredToken(user),
+            };
+        }
+
         await activityLogService.record({
             ...context,
-            action: "google_login",
+            action: created ? "google_register" : "google_login",
             status: "success",
-            userId: user._id.toString(),
+            userId,
             email: user.email,
+            reason: linked ? "linked_existing_account" : undefined,
         });
 
         const token = await this.createAuthToken(user, context);
 
-        return { token, user };
+        return { twoFactorRequired: false as const, passwordExpired: false as const, token, user };
     }
 
     async getUserById(userId: string) {
