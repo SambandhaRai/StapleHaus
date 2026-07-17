@@ -6,6 +6,7 @@ let activityLogRepository = new ActivityLogRepository();
 
 const MAX_USER_AGENT_LENGTH = 400;
 const MAX_REASON_LENGTH = 200;
+const MAX_EXPORT_ROWS = 5000;
 
 const USER_VISIBLE_ACTIONS: ActivityActionType[] = [
     "register",
@@ -95,5 +96,14 @@ export class ActivityLogService {
         ]);
 
         return { logs, total, page, limit };
+    }
+
+    async exportMyLogs(userId: string) {
+        return await activityLogRepository.listLogs({
+            userId,
+            actions: USER_VISIBLE_ACTIONS,
+            limit: MAX_EXPORT_ROWS,
+            skip: 0,
+        });
     }
 }

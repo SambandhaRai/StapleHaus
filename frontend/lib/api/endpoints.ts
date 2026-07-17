@@ -25,6 +25,8 @@ export const API = {
         REVOKE_SESSION: (sessionId: string) => `/api/users/me/sessions/${sessionId}`,
         ACTIVITY_LOGS: (page: number, limit: number) =>
             `/api/users/me/activity-logs?page=${page}&limit=${limit}`,
+        EXPORT_ACTIVITY_LOGS: (format: "csv" | "json") =>
+            `/api/users/me/activity-logs/export?format=${format}`,
     },
     PRODUCT: {
         GET_ALL: (

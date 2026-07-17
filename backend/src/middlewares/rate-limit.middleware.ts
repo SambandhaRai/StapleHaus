@@ -133,3 +133,10 @@ export const reviewWriteLimiter = rateLimit({
     limit: 8,
     keyGenerator: byUser,
 });
+
+export const activityExportLimiter = rateLimit({
+    ...baseOptions,
+    windowMs: 15 * 60 * 1000,
+    limit: 5,
+    keyGenerator: byUser,
+});
