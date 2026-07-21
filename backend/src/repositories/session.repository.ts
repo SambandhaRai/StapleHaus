@@ -1,3 +1,4 @@
+import { trusted } from "mongoose";
 import { ISession, SessionModel } from "../models/session.model";
 
 type CreateSessionData = {
@@ -47,7 +48,7 @@ export class SessionRepository implements ISessionRepository {
         return await SessionModel.find({
             userId,
             revokedAt: null,
-            expiresAt: { $gt: now },
+            expiresAt: trusted({ $gt: now }),
         }).sort({ lastUsedAt: -1 });
     }
 
@@ -58,7 +59,7 @@ export class SessionRepository implements ISessionRepository {
     async revokeSessionsByUser(userId: string, revokedAt: Date, exceptId?: string): Promise<void> {
         const query: Record<string, unknown> = { userId, revokedAt: null };
         if (exceptId) {
-            query._id = { $ne: exceptId };
+            query._id = trusted({ $ne: exceptId });
         }
         await SessionModel.updateMany(query, { revokedAt });
     }

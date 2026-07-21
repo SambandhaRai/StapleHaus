@@ -1,3 +1,4 @@
+import { trusted } from "mongoose";
 import { IActivityLog, ActivityLogModel } from "../models/activity-log.model";
 import { ActivityActionType, ActivityStatusType } from "../types/activity-log.type";
 
@@ -49,7 +50,7 @@ export class ActivityLogRepository implements IActivityLogRepository {
         if (filters.userId) query.userId = filters.userId;
         if (filters.email) query.email = filters.email.trim().toLowerCase();
         if (filters.action) query.action = filters.action;
-        else if (filters.actions?.length) query.action = { $in: filters.actions };
+        else if (filters.actions?.length) query.action = trusted({ $in: filters.actions });
         if (filters.status) query.status = filters.status;
         return query;
     }

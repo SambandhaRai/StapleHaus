@@ -1,3 +1,4 @@
+import { trusted } from "mongoose";
 import { CartModel, ICart } from "../models/cart.model";
 import { CartItemType } from "../types/cart.type";
 
@@ -43,7 +44,7 @@ export class CartRepository implements ICartRepository {
 
     async incrementItemQuantity(userId: string, productId: string, variantSku: string, quantity: number): Promise<ICart | null> {
         return await CartModel.findOneAndUpdate(
-            { userId, items: { $elemMatch: { productId, variantSku } } },
+            { userId, items: trusted({ $elemMatch: { productId, variantSku } }) },
             { $inc: { "items.$.quantity": quantity } },
             { returnDocument: "after" }
         );

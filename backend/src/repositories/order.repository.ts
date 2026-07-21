@@ -1,3 +1,4 @@
+import { trusted } from "mongoose";
 import { OrderModel, IOrder, IOrderItem } from "../models/order.model";
 import { OrderStatusType, PaymentStatusType } from "../types/order.type";
 
@@ -73,14 +74,14 @@ export class OrderRepository implements IOrderRepository {
     async getExpiredPendingOrders(cutoff: Date): Promise<IOrder[]> {
         return await OrderModel.find({
             paymentStatus: "pending",
-            paymentMethod: { $ne: "cod" },
-            createdAt: { $lt: cutoff },
+            paymentMethod: trusted({ $ne: "cod" }),
+            createdAt: trusted({ $lt: cutoff }),
         });
     }
 
     async markExpiredIfPending(id: string): Promise<IOrder | null> {
         return await OrderModel.findOneAndUpdate(
-            { _id: id, paymentStatus: "pending", paymentMethod: { $ne: "cod" } },
+            { _id: id, paymentStatus: "pending", paymentMethod: trusted({ $ne: "cod" }) },
             { $set: { paymentStatus: "failed", orderStatus: "cancelled" } },
             { returnDocument: "after" }
         );

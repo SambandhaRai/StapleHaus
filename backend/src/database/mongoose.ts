@@ -13,6 +13,7 @@ export async function connectDatabase(
 ) {
     const { exitOnError = true } = options;
     try {
+        mongoose.set("sanitizeFilter", true);
         await mongoose.connect(uri);
         logger.info("Database connected successfully");
     } catch (error) {
