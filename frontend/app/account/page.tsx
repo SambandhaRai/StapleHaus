@@ -5,9 +5,16 @@ import { LogoutButton } from "@/app/_components/logout-button";
 import { TwoFactorManager } from "./_components/two-factor-manager";
 import { SessionsManager } from "./_components/sessions-manager";
 import { ChangePasswordManager } from "./_components/change-password-manager";
+import { PasswordExpiryBanner } from "./_components/password-expiry-banner";
 import { handleGetProfile, handleGetSessions } from "@/lib/actions/users-action";
 
-type ProfileUser = { name?: string; email?: string; twoFactorEnabled?: boolean; hasPassword?: boolean };
+type ProfileUser = {
+    name?: string;
+    email?: string;
+    twoFactorEnabled?: boolean;
+    hasPassword?: boolean;
+    passwordExpiresAt?: string | null;
+};
 
 const extractUser = (res: unknown): ProfileUser | null => {
     if (res && typeof res === "object" && "success" in res) {
@@ -53,6 +60,8 @@ export default async function AccountPage() {
                 <h1 className="h1 mb-2">Hi, {user.name}</h1>
                 <p className="body-sm mb-12 text-muted">{user.email}</p>
 
+                <PasswordExpiryBanner passwordExpiresAt={user.passwordExpiresAt} />
+
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <Link
                         href="/wishlist"
@@ -90,6 +99,15 @@ export default async function AccountPage() {
                         <TwoFactorManager initialEnabled={Boolean(user.twoFactorEnabled)} />
                         {user.hasPassword && <ChangePasswordManager />}
                         <SessionsManager initialSessions={sessions} />
+                        <Link
+                            href="/account/activity"
+                            className="block border border-border p-6 transition hover:border-ink"
+                        >
+                            <h2 className="h4 mb-1">Recent activity</h2>
+                            <p className="body-sm text-muted">
+                                Review sign-ins, password changes, and order events on your account.
+                            </p>
+                        </Link>
                     </div>
                 </div>
 

@@ -1,5 +1,6 @@
 import z from "zod";
 import { BaseUserSchema, AddressSchema } from "../types/user.type";
+import { stripHtml } from "../utils/sanitize";
 
 export const RegisterUserDto = BaseUserSchema.pick({
     name: true,
@@ -42,7 +43,7 @@ export const LoginTwoFactorDto = z.object({
 export type LoginTwoFactorDto = z.infer<typeof LoginTwoFactorDto>;
 
 export const UpdateUserDto = z.object({
-    name: z.string().trim().min(2, "Name must be at least 2 characters").optional(),
+    name: z.string().trim().transform(stripHtml).pipe(z.string().min(2, "Name must be at least 2 characters")).optional(),
 });
 export type UpdateUserDto = z.infer<typeof UpdateUserDto>;
 
@@ -62,6 +63,19 @@ export const ChangePasswordDto = z.object({
     newPassword: BaseUserSchema.shape.password,
 });
 export type ChangePasswordDto = z.infer<typeof ChangePasswordDto>;
+
+export const ChangeExpiredPasswordDto = z.object({
+    expiredToken: z.string().trim().min(1, "Session token is required"),
+    newPassword: BaseUserSchema.shape.password,
+});
+export type ChangeExpiredPasswordDto = z.infer<typeof ChangeExpiredPasswordDto>;
+
+export const GoogleCallbackDto = z.object({
+    code: z.string().trim().min(1, "Missing Google authorization code"),
+    state: z.string().trim().min(1, "Missing Google sign-in state"),
+    stateCookie: z.string().trim().min(1, "Missing Google sign-in state"),
+});
+export type GoogleCallbackDto = z.infer<typeof GoogleCallbackDto>;
 
 export const CreateAddressDto = AddressSchema;
 export type CreateAddressDto = z.infer<typeof CreateAddressDto>;

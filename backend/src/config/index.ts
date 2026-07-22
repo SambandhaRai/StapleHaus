@@ -9,14 +9,23 @@ if (!jwtSecret || jwtSecret.length < 32) {
 }
 export const JWT_SECRET: string = jwtSecret;
 export const JWT_EXPIRES_IN: string = process.env.JWT_EXPIRES_IN || "30d";
+const passwordMaxAgeDays = Number(process.env.PASSWORD_MAX_AGE_DAYS);
+export const PASSWORD_MAX_AGE_DAYS: number =
+    Number.isFinite(passwordMaxAgeDays) && passwordMaxAgeDays >= 0 ? passwordMaxAgeDays : 90;
 export const FRONTEND_URL: string = process.env.FRONTEND_URL || "http://localhost:3000";
 export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || "";
-export const TURNSTILE_SECRET: string = process.env.TURNSTILE_SECRET || "";
+export const GOOGLE_CLIENT_SECRET: string = process.env.GOOGLE_CLIENT_SECRET || "";
+export const GOOGLE_CALLBACK_URL: string =
+    process.env.GOOGLE_CALLBACK_URL || `${FRONTEND_URL}/api/auth/google/callback`;
+export const RECAPTCHA_SECRET: string = process.env.RECAPTCHA_SECRET || "";
 const twoFactorEncKey = process.env.TWO_FACTOR_ENC_KEY;
 if (!twoFactorEncKey || !/^[0-9a-fA-F]{64}$/.test(twoFactorEncKey)) {
     throw new Error("TWO_FACTOR_ENC_KEY must be set to 64 hex characters (32 random bytes)");
 }
 export const TWO_FACTOR_ENC_KEY: string = twoFactorEncKey;
+const orderReservationMinutes = Number(process.env.ORDER_RESERVATION_MINUTES);
+export const ORDER_RESERVATION_MINUTES: number =
+    Number.isFinite(orderReservationMinutes) && orderReservationMinutes > 0 ? orderReservationMinutes : 30;
 export const ESEWA_PRODUCT_CODE: string = process.env.ESEWA_PRODUCT_CODE || "EPAYTEST";
 export const ESEWA_SECRET: string = process.env.ESEWA_SECRET || "8gBm/:&EnhH.1/q";
 export const ESEWA_FORM_URL: string = process.env.ESEWA_FORM_URL || "https://rc-epay.esewa.com.np/api/epay/main/v2/form";

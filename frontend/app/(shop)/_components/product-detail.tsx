@@ -10,7 +10,6 @@ import { ProductReviews, type ProductReview } from "./product-reviews";
 import { getUploadUrl } from "@/lib/uploads";
 import { getAuthToken, getUserData } from "@/lib/cookie";
 import { handleGetProductBySlug, handleGetProducts } from "@/lib/actions/products-action";
-import { handleGetWishlist } from "@/lib/actions/wishlist-action";
 import { handleGetCart } from "@/lib/actions/cart-action";
 import { handleGetProductReviews } from "@/lib/actions/reviews-action";
 
@@ -81,38 +80,6 @@ const extractReviews = (res: unknown): ProductReview[] => {
     return [];
 };
 
-const isInWishlist = (res: unknown, productId: string): boolean => {
-    if (res && typeof res === "object" && "success" in res) {
-        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
-        if (r.success && Array.isArray(r.data?.productIds)) {
-            return r.data.productIds.some((item) => {
-                const id = item && typeof item === "object" && "_id" in item
-                    ? String((item as { _id: unknown })._id)
-                    : String(item);
-                return id === productId;
-            });
-        }
-    }
-    return false;
-};
-
-const extractWishlistProductIds = (res: unknown): string[] => {
-    if (res && typeof res === "object" && "success" in res) {
-        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
-        if (r.success && Array.isArray(r.data?.productIds)) {
-            return r.data.productIds
-                .map((item) => {
-                    if (item && typeof item === "object" && "_id" in item) {
-                        return String((item as { _id: unknown })._id);
-                    }
-                    return String(item);
-                })
-                .filter(Boolean);
-        }
-    }
-    return [];
-};
-
 const cartSkusForProduct = (res: unknown, productId: string): string[] => {
     if (res && typeof res === "object" && "success" in res) {
         const r = res as {
@@ -145,17 +112,14 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
     ]);
     const loggedIn = Boolean(authToken);
 
-    const [productRes, wishlistRes, cartRes] = await Promise.all([
+    const [productRes, cartRes] = await Promise.all([
         handleGetProductBySlug(slug),
-        loggedIn ? handleGetWishlist() : Promise.resolve(null),
         loggedIn ? handleGetCart() : Promise.resolve(null),
     ]);
 
     const product = extractProduct(productRes);
     if (!product) notFound();
 
-    const initialWishlisted = isInWishlist(wishlistRes, product._id);
-    const wishlistedProductIds = extractWishlistProductIds(wishlistRes);
     const cartSkus = cartSkusForProduct(cartRes, product._id);
     const reviewsRes = await handleGetProductReviews(product._id);
     const reviews = extractReviews(reviewsRes);
@@ -212,7 +176,6 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
                             basePrice={product.basePrice}
                             variants={variants}
                             loggedIn={loggedIn}
-                            initialWishlisted={initialWishlisted}
                             initialCartSkus={cartSkus}
                         />
 
@@ -269,11 +232,7 @@ export async function ProductDetail({ slug }: ProductDetailProps) {
                             </Link>
                         ) : null}
                     </div>
-                    <ProductCarousel
-                        products={moreFromBrand}
-                        loggedIn={loggedIn}
-                        wishlistedProductIds={wishlistedProductIds}
-                    />
+                    <ProductCarousel products={moreFromBrand} />
                 </section>
             ) : null}
 

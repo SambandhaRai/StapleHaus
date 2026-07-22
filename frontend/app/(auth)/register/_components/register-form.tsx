@@ -13,7 +13,7 @@ import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { PasswordStrength, passwordIsStrong } from "../../_components/password-strength";
 import { GoogleSignInButton } from "../../_components/google-sign-in-button";
-import { TurnstileWidget } from "../../_components/turnstile-widget";
+import { RecaptchaWidget } from "../../_components/recaptcha-widget";
 import { handleRegister } from "@/lib/actions/auth-action";
 
 const registerSchema = z
@@ -34,7 +34,7 @@ const registerSchema = z
 
 type RegisterValues = z.infer<typeof registerSchema>;
 
-const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 
 export function RegisterForm() {
     const router = useRouter();
@@ -139,7 +139,7 @@ export function RegisterForm() {
                     {...register("confirmPassword")}
                 />
 
-                <TurnstileWidget
+                <RecaptchaWidget
                     key={captchaKey}
                     onVerify={setCaptchaToken}
                     onExpire={() => setCaptchaToken("")}

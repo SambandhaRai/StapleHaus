@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Button } from "@/app/_components/button";
 import { handleGetSessions, handleRevokeSession, handleRevokeOtherSessions } from "@/lib/actions/users-action";
+import { describeDevice } from "@/lib/device";
+import { formatWhen } from "@/lib/format";
 
 type Session = {
     _id: string;
@@ -17,32 +19,6 @@ type Session = {
 interface SessionsManagerProps {
     initialSessions: Session[];
 }
-
-const describeDevice = (userAgent?: string) => {
-    if (!userAgent) return "Unknown device";
-
-    const browser = /Edg/.test(userAgent) ? "Edge"
-        : /Chrome/.test(userAgent) ? "Chrome"
-        : /Firefox/.test(userAgent) ? "Firefox"
-        : /Safari/.test(userAgent) ? "Safari"
-        : "Browser";
-
-    const os = /Windows/.test(userAgent) ? "Windows"
-        : /iPhone|iPad|iOS/.test(userAgent) ? "iOS"
-        : /Mac OS X|Macintosh/.test(userAgent) ? "macOS"
-        : /Android/.test(userAgent) ? "Android"
-        : /Linux/.test(userAgent) ? "Linux"
-        : "Unknown OS";
-
-    return `${browser} on ${os}`;
-};
-
-const formatWhen = (value?: string) => {
-    if (!value) return "";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "";
-    return date.toLocaleString();
-};
 
 export function SessionsManager({ initialSessions }: SessionsManagerProps) {
     const [sessions, setSessions] = useState<Session[]>(initialSessions);

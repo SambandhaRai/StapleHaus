@@ -2,6 +2,7 @@
 
 import type { SyntheticEvent } from "react";
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { handleCheckout } from "@/lib/actions/orders-action";
 import { handleAddAddress } from "@/lib/actions/users-action";
@@ -46,6 +47,7 @@ const getAddressLabel = (address: CheckoutAddress) =>
     [address.label, address.line1, address.city].filter(Boolean).join(" · ");
 
 export function CheckoutForm({ user, cart }: CheckoutFormProps) {
+    const router = useRouter();
     const items = useMemo(() => cart.items || [], [cart.items]);
     const addresses = user.addresses || [];
     const [step, setStep] = useState<"delivery" | "payment">("delivery");
@@ -53,6 +55,7 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
     const [checkoutAddressId, setCheckoutAddressId] = useState<string | null>(addresses[0]?._id || null);
     const [addressForm, setAddressForm] = useState<CheckoutAddressForm>(() => emptyAddressForm(user));
     const [discount, setDiscount] = useState<AppliedDiscount | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<"esewa" | "cod">("esewa");
     const [submitting, setSubmitting] = useState(false);
 
     const subtotal = useMemo(() => getSubtotal(items), [items]);
@@ -124,10 +127,24 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
         try {
             const result = await handleCheckout({
                 addressId,
+                paymentMethod,
                 ...(discount?.code ? { discountCode: discount.code } : {}),
             });
 
-            if (!result.success || !result.payment) {
+            if (!result.success) {
+                toast.error(result.message || "Checkout failed");
+                setSubmitting(false);
+                return;
+            }
+
+            if (paymentMethod === "cod") {
+                toast.success("Order placed. Pay in cash when it arrives.");
+                router.push(result.data?._id ? `/orders/${result.data._id}` : "/orders");
+                router.refresh();
+                return;
+            }
+
+            if (!result.payment) {
                 toast.error(result.message || "Checkout failed");
                 setSubmitting(false);
                 return;
@@ -156,19 +173,6 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
 
     return (
         <main className="mx-auto w-full max-w-328 px-6 py-10 lg:px-10 lg:py-14">
-            <div className="mb-10 flex justify-center">
-                <div className="grid w-full max-w-xs grid-cols-2 items-center text-center text-sm">
-                    <div>
-                        <p className={step === "delivery" ? "font-semibold" : "text-muted"}>Delivery</p>
-                        <div className="mx-auto mt-2 h-2 w-2 rounded-full bg-ink" />
-                    </div>
-                    <div className="relative before:absolute before:left-[-50%] before:top-[2.15rem] before:h-px before:w-full before:bg-border">
-                        <p className={step === "payment" ? "font-semibold" : "text-muted"}>Payment</p>
-                        <div className={`mx-auto mt-2 h-2 w-2 rounded-full ${step === "payment" ? "bg-ink" : "bg-border"}`} />
-                    </div>
-                </div>
-            </div>
-
             <div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_390px] lg:gap-16">
                 {step === "delivery" ? (
                     <form onSubmit={continueToPayment} className="space-y-8">
@@ -291,11 +295,48 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
                     <section className="space-y-8">
                         <div>
                             <h1 className="h4 mb-5">Payment</h1>
-                            <div className="border border-border p-5">
-                                <p className="font-semibold">eSewa</p>
-                                <p className="body-sm mt-2 text-muted">
-                                    You'll be redirected to eSewa to complete payment securely. Your order is reserved until payment is confirmed.
-                                </p>
+                            <div className="space-y-3">
+                                <label
+                                    className={`flex cursor-pointer gap-3 border p-5 transition ${
+                                        paymentMethod === "esewa" ? "border-ink" : "border-border hover:border-ink"
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="esewa"
+                                        checked={paymentMethod === "esewa"}
+                                        onChange={() => setPaymentMethod("esewa")}
+                                        className="mt-1"
+                                    />
+                                    <span>
+                                        <span className="block font-semibold">eSewa</span>
+                                        <span className="body-sm mt-2 block text-muted">
+                                            You&apos;ll be redirected to eSewa to complete payment securely. Your order is reserved until payment is confirmed.
+                                        </span>
+                                    </span>
+                                </label>
+
+                                <label
+                                    className={`flex cursor-pointer gap-3 border p-5 transition ${
+                                        paymentMethod === "cod" ? "border-ink" : "border-border hover:border-ink"
+                                    }`}
+                                >
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="cod"
+                                        checked={paymentMethod === "cod"}
+                                        onChange={() => setPaymentMethod("cod")}
+                                        className="mt-1"
+                                    />
+                                    <span>
+                                        <span className="block font-semibold">Cash on Delivery</span>
+                                        <span className="body-sm mt-2 block text-muted">
+                                            Pay in cash when your order arrives. Your order is confirmed straight away.
+                                        </span>
+                                    </span>
+                                </label>
                             </div>
                         </div>
 
@@ -319,7 +360,9 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
                             disabled={submitting}
                             className="label-caps w-full bg-ink px-8 py-4 text-paper transition hover:bg-neutral-800 disabled:opacity-50 sm:w-80"
                         >
-                            {submitting ? "Redirecting to eSewa..." : "Pay With eSewa"}
+                            {submitting
+                                ? (paymentMethod === "cod" ? "Placing order..." : "Redirecting to eSewa...")
+                                : (paymentMethod === "cod" ? "Place Order" : "Pay With eSewa")}
                         </button>
                     </section>
                 )}

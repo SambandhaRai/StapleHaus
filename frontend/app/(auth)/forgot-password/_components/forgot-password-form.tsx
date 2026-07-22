@@ -9,7 +9,7 @@ import { toast } from "react-toastify";
 import { BackButton } from "@/app/_components/back-button";
 import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
-import { TurnstileWidget } from "../../_components/turnstile-widget";
+import { RecaptchaWidget } from "../../_components/recaptcha-widget";
 import { handleForgotPassword } from "@/lib/actions/auth-action";
 
 const forgotPasswordSchema = z.object({
@@ -18,7 +18,7 @@ const forgotPasswordSchema = z.object({
 
 type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 
-const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 
 export function ForgotPasswordForm() {
     const [submitted, setSubmitted] = useState(false);
@@ -89,7 +89,7 @@ export function ForgotPasswordForm() {
                         {...register("email")}
                     />
 
-                    <TurnstileWidget
+                    <RecaptchaWidget
                         key={captchaKey}
                         onVerify={setCaptchaToken}
                         onExpire={() => setCaptchaToken("")}

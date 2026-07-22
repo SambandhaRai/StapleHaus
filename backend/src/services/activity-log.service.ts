@@ -6,6 +6,29 @@ let activityLogRepository = new ActivityLogRepository();
 
 const MAX_USER_AGENT_LENGTH = 400;
 const MAX_REASON_LENGTH = 200;
+const MAX_EXPORT_ROWS = 5000;
+
+const USER_VISIBLE_ACTIONS: ActivityActionType[] = [
+    "register",
+    "login",
+    "login_failed",
+    "account_locked",
+    "google_login",
+    "logout",
+    "otp_verify",
+    "otp_resend",
+    "twofa_challenge",
+    "twofa_enable",
+    "twofa_disable",
+    "password_change",
+    "password_expired_challenge",
+    "password_reset_request",
+    "password_reset",
+    "order_placed",
+    "payment_verified",
+    "payment_failed",
+    "order_expired",
+];
 
 export class ActivityLogService {
 
@@ -52,5 +75,35 @@ export class ActivityLogService {
         ]);
 
         return { logs, total, page, limit };
+    }
+
+    async getMyLogs(userId: string, filters: { page: number; limit: number }) {
+        const page = Math.max(1, filters.page);
+        const limit = Math.min(Math.max(1, filters.limit), 50);
+        const skip = (page - 1) * limit;
+
+        const [logs, total] = await Promise.all([
+            activityLogRepository.listLogs({
+                userId,
+                actions: USER_VISIBLE_ACTIONS,
+                limit,
+                skip,
+            }),
+            activityLogRepository.countLogs({
+                userId,
+                actions: USER_VISIBLE_ACTIONS,
+            }),
+        ]);
+
+        return { logs, total, page, limit };
+    }
+
+    async exportMyLogs(userId: string) {
+        return await activityLogRepository.listLogs({
+            userId,
+            actions: USER_VISIBLE_ACTIONS,
+            limit: MAX_EXPORT_ROWS,
+            skip: 0,
+        });
     }
 }

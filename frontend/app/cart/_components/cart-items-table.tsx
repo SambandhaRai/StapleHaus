@@ -6,7 +6,7 @@ import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "react-toastify";
 import { handleRemoveCartItem, handleUpdateCartItem } from "@/lib/actions/cart-action";
-import { useCart } from "@/app/_components/cart-provider";
+import { useCart } from "@/context/CartContext";
 import type { CartItem } from "./cart-types";
 import { CartRemoveConfirmation } from "./cart-remove-confirmation";
 import {

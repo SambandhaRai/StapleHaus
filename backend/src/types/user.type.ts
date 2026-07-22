@@ -1,4 +1,5 @@
 import z from "zod";
+import { stripHtml } from "../utils/sanitize";
 
 export const UserRoleEnum = z.enum(["customer", "admin"]);
 
@@ -14,7 +15,7 @@ export const AddressSchema = z.object({
 });
 
 export const BaseUserSchema = z.object({
-    name: z.string().trim().min(2, "Name must be at least 2 characters"),
+    name: z.string().trim().transform(stripHtml).pipe(z.string().min(2, "Name must be at least 2 characters")),
     email: z.email("Invalid email address"),
     password: z.string()
         .trim()

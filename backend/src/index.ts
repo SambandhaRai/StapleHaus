@@ -5,6 +5,7 @@ import https from "https";
 import app from "./app";
 import { PORT } from "./config";
 import { connectDatabase } from "./database/mongoose";
+import { startReleaseExpiredOrdersJob } from "./jobs/release-expired-orders.job";
 import { logger } from "./utils/logger";
 import { flushAlerts } from "./utils/alert";
 
@@ -13,6 +14,7 @@ const CERT_PATH = path.join(__dirname, "../certs/localhost.pem");
 
 async function start() {
     await connectDatabase();
+    startReleaseExpiredOrdersJob();
 
     if (fs.existsSync(KEY_PATH) && fs.existsSync(CERT_PATH)) {
         const key = fs.readFileSync(KEY_PATH);

@@ -1,6 +1,6 @@
 "use server";
 
-import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, changePassword, getSessions, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
+import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, changePassword, getSessions, getActivityLogs, exportActivityLogs, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
 import { setUserData } from "../cookie";
 
 const getActionErrorMessage = (err: unknown, fallback: string) => {
@@ -92,6 +92,12 @@ export const handleDisableTwoFactor = async (password: string) => {
 export const handleChangePassword = async (currentPassword: string, newPassword: string) => {
     try {
         const result = await changePassword(currentPassword, newPassword);
+        if (result.success) {
+            const profile = await getProfile().catch(() => null);
+            if (profile?.success && profile.data) {
+                await setUserData(profile.data);
+            }
+        }
         return {
             success: Boolean(result.success),
             message: result.message,
@@ -100,6 +106,40 @@ export const handleChangePassword = async (currentPassword: string, newPassword:
         return {
             success: false,
             message: getActionErrorMessage(err, "Failed to change password"),
+        };
+    }
+};
+
+export const handleGetActivityLogs = async (page: number = 1, limit: number = 20) => {
+    try {
+        const result = await getActivityLogs(page, limit);
+        return {
+            success: Boolean(result.success),
+            data: result.data,
+            meta: result.meta,
+            message: result.message,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to load activity"),
+        };
+    }
+};
+
+export const handleExportActivityLogs = async (format: "csv" | "json") => {
+    try {
+        const content = await exportActivityLogs(format);
+        const stamp = new Date().toISOString().slice(0, 10);
+        return {
+            success: true,
+            content,
+            filename: `staplehaus-activity-${stamp}.${format}`,
+        };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            message: getActionErrorMessage(err, "Failed to export activity"),
         };
     }
 };

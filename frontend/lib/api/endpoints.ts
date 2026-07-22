@@ -5,7 +5,9 @@ export const API = {
         RESEND_OTP: "/api/auth/resend-otp",
         LOGIN: "/api/auth/login",
         LOGIN_2FA: "/api/auth/login/2fa",
-        GOOGLE: "/api/auth/google",
+        PASSWORD_EXPIRED: "/api/auth/login/password-expired",
+        GOOGLE_START: "/api/auth/google/start",
+        GOOGLE_CALLBACK: "/api/auth/google/callback",
         LOGOUT: "/api/auth/logout",
         FORGOT_PASSWORD: "/api/auth/forgot-password",
         RESET_PASSWORD: "/api/auth/reset-password",
@@ -22,6 +24,10 @@ export const API = {
         TWO_FACTOR_DISABLE: "/api/users/me/2fa/disable",
         SESSIONS: "/api/users/me/sessions",
         REVOKE_SESSION: (sessionId: string) => `/api/users/me/sessions/${sessionId}`,
+        ACTIVITY_LOGS: (page: number, limit: number) =>
+            `/api/users/me/activity-logs?page=${page}&limit=${limit}`,
+        EXPORT_ACTIVITY_LOGS: (format: "csv" | "json") =>
+            `/api/users/me/activity-logs/export?format=${format}`,
     },
     PRODUCT: {
         GET_ALL: (

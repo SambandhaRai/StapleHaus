@@ -1,3 +1,4 @@
+import { trusted } from "mongoose";
 import { IActivityLog, ActivityLogModel } from "../models/activity-log.model";
 import { ActivityActionType, ActivityStatusType } from "../types/activity-log.type";
 
@@ -12,8 +13,10 @@ type CreateActivityLogData = {
 };
 
 type ListActivityLogFilters = {
+    userId?: string;
     email?: string;
     action?: ActivityActionType;
+    actions?: ActivityActionType[];
     status?: ActivityStatusType;
     limit: number;
     skip: number;
@@ -33,7 +36,7 @@ export class ActivityLogRepository implements IActivityLogRepository {
 
     async listLogs(filters: ListActivityLogFilters): Promise<IActivityLog[]> {
         return await ActivityLogModel.find(this.buildQuery(filters))
-            .sort({ createdAt: -1 })
+            .sort({ createdAt: -1, _id: -1 })
             .skip(filters.skip)
             .limit(filters.limit);
     }
@@ -44,8 +47,10 @@ export class ActivityLogRepository implements IActivityLogRepository {
 
     private buildQuery(filters: Partial<ListActivityLogFilters>) {
         const query: Record<string, unknown> = {};
+        if (filters.userId) query.userId = filters.userId;
         if (filters.email) query.email = filters.email.trim().toLowerCase();
         if (filters.action) query.action = filters.action;
+        else if (filters.actions?.length) query.action = trusted({ $in: filters.actions });
         if (filters.status) query.status = filters.status;
         return query;
     }

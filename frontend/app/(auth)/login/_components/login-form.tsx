@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +12,7 @@ import { Button } from "@/app/_components/button";
 import { Input } from "@/app/_components/input";
 import { PasswordField } from "../../_components/password-field";
 import { GoogleSignInButton } from "../../_components/google-sign-in-button";
-import { TurnstileWidget } from "../../_components/turnstile-widget";
+import { RecaptchaWidget } from "../../_components/recaptcha-widget";
 import { handleLogin } from "@/lib/actions/auth-action";
 
 const loginSchema = z.object({
@@ -22,12 +22,20 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
-const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+const captchaEnabled = Boolean(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY);
 
-export function LoginForm() {
+export function LoginForm({ error }: { error?: string }) {
     const router = useRouter();
     const [captchaToken, setCaptchaToken] = useState("");
     const [captchaKey, setCaptchaKey] = useState(0);
+    const shownError = useRef<string>("");
+
+    useEffect(() => {
+        if (!error || shownError.current === error) return;
+        shownError.current = error;
+        toast.error(error);
+        router.replace("/login");
+    }, [error, router]);
 
     const {
         register,
@@ -45,6 +53,10 @@ export function LoginForm() {
         const res = await handleLogin({ ...values, captchaToken });
         if (res.success && res.twoFactorRequired) {
             router.push("/login/2fa");
+            return;
+        }
+        if (res.success && res.passwordExpired) {
+            router.push("/login/password-expired");
             return;
         }
         if (res.success) {
@@ -106,7 +118,7 @@ export function LoginForm() {
                     />
                 </div>
 
-                <TurnstileWidget
+                <RecaptchaWidget
                     key={captchaKey}
                     onVerify={setCaptchaToken}
                     onExpire={() => setCaptchaToken("")}

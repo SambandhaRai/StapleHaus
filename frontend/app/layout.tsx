@@ -3,9 +3,12 @@ import { Inter, Archivo } from "next/font/google";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./globals.css";
-import { CartProvider } from "./_components/cart-provider";
-import { getAuthToken } from "@/lib/cookie";
+import { CartProvider } from "@/context/CartContext";
+import { WishlistProvider } from "@/context/WishlistContext";
+import { PasswordExpiryDialog } from "./_components/password-expiry-dialog";
+import { getAuthToken, getUserData } from "@/lib/cookie";
 import { handleGetCart } from "@/lib/actions/cart-action";
+import { handleGetWishlist } from "@/lib/actions/wishlist-action";
 
 const extractCartCount = (res: unknown): number => {
     if (res && typeof res === "object" && "success" in res) {
@@ -15,6 +18,20 @@ const extractCartCount = (res: unknown): number => {
         }
     }
     return 0;
+};
+
+const extractWishlistIds = (res: unknown): string[] => {
+    if (res && typeof res === "object" && "success" in res) {
+        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
+        if (r.success && Array.isArray(r.data?.productIds)) {
+            return r.data.productIds
+                .map((entry) =>
+                    typeof entry === "string" ? entry : (entry as { _id?: string })?._id || ""
+                )
+                .filter(Boolean);
+        }
+    }
+    return [];
 };
 
 const inter = Inter({
@@ -43,8 +60,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const authToken = await getAuthToken();
-  const cartRes = authToken ? await handleGetCart() : null;
+  const [cartRes, wishlistRes] = authToken
+    ? await Promise.all([handleGetCart(), handleGetWishlist()])
+    : [null, null];
   const initialCartCount = extractCartCount(cartRes);
+  const initialWishlistIds = extractWishlistIds(wishlistRes);
+  const userData = authToken ? await getUserData() : null;
+  const passwordExpiresAt = typeof userData?.passwordExpiresAt === "string" ? userData.passwordExpiresAt : null;
 
   return (
     <html
@@ -53,8 +75,14 @@ export default async function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <CartProvider initialCount={initialCartCount}>
-          {children}
+          <WishlistProvider
+            initialProductIds={initialWishlistIds}
+            loggedIn={Boolean(authToken)}
+          >
+            {children}
+          </WishlistProvider>
         </CartProvider>
+        <PasswordExpiryDialog passwordExpiresAt={passwordExpiresAt} />
         <ToastContainer
           position="top-right"
           autoClose={3000}

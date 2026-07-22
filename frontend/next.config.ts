@@ -5,12 +5,12 @@ const isDev = process.env.NODE_ENV !== "production";
 
 const contentSecurityPolicy = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ""}https://accounts.google.com https://*.gstatic.com https://challenges.cloudflare.com`,
+  `script-src 'self' 'unsafe-inline' ${isDev ? "'unsafe-eval' " : ""}https://www.google.com https://*.gstatic.com`,
   `style-src 'self' 'unsafe-inline'`,
-  `img-src 'self' data: blob: ${apiOrigin} https://*.googleusercontent.com https://*.gstatic.com`,
+  `img-src 'self' data: blob: ${apiOrigin} https://*.gstatic.com`,
   `font-src 'self' data:`,
-  `connect-src 'self' ${apiOrigin} https://accounts.google.com https://challenges.cloudflare.com${isDev ? " ws: wss:" : ""}`,
-  `frame-src https://accounts.google.com https://challenges.cloudflare.com`,
+  `connect-src 'self' ${apiOrigin} https://www.google.com${isDev ? " ws: wss:" : ""}`,
+  `frame-src https://www.google.com`,
   `frame-ancestors 'none'`,
   `base-uri 'self'`,
   `form-action 'self' https://rc-epay.esewa.com.np https://epay.esewa.com.np`,

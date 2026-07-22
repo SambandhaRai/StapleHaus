@@ -3,10 +3,13 @@ import { CartRepository } from "../repositories/cart.repository";
 import { ProductRepository } from "../repositories/product.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { DiscountService } from "../services/discount.service";
+import { ActivityLogService } from "../services/activity-log.service";
+import { RequestContext } from "../types/activity-log.type";
 import { IOrderItem } from "../models/order.model";
 import { CheckoutDto } from "../dtos/order.dto";
 import { OrderStatusType } from "../types/order.type";
 import { HttpError } from "../errors/http-error";
+import { ORDER_RESERVATION_MINUTES } from "../config";
 import { buildEsewaForm, decodeEsewaCallback, isCallbackSignatureValid, verifyEsewaStatus } from "../utils/esewa";
 import { VerifyPaymentDto } from "../dtos/order.dto";
 import { logger } from "../utils/logger";
@@ -18,12 +21,13 @@ let cartRepository = new CartRepository();
 let productRepository = new ProductRepository();
 let userRepository = new UserRepository();
 let discountService = new DiscountService();
+let activityLogService = new ActivityLogService();
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export class OrderService {
 
-    async checkout(userId: string, data: CheckoutDto) {
+    async checkout(userId: string, data: CheckoutDto, context: RequestContext = {}) {
         if (!mongoose.Types.ObjectId.isValid(data.addressId)) {
             throw new HttpError(400, "Invalid address ID");
         }
@@ -102,7 +106,9 @@ export class OrderService {
             phone: address.phone,
         };
 
-        const transactionUuid = randomUUID();
+        const isCod = data.paymentMethod === "cod";
+        const transactionUuid = isCod ? undefined : randomUUID();
+
         const order = await orderRepository.createOrder({
             userId,
             items: orderItems,
@@ -111,13 +117,43 @@ export class OrderService {
             discount,
             total,
             transactionUuid,
+            paymentMethod: isCod ? "cod" : "esewa",
             paymentStatus: "pending",
             orderStatus: "pending",
         });
 
-        const payment = buildEsewaForm(transactionUuid, total);
+        await activityLogService.record({
+            ...context,
+            action: "order_placed",
+            status: "success",
+            userId,
+            email: user.email,
+            reason: order._id.toString(),
+        });
+
+        if (isCod) {
+            await this.redeemOrderDiscount(order);
+            await cartRepository.clearItems(userId);
+            return { order, payment: null };
+        }
+
+        const payment = buildEsewaForm(transactionUuid!, total);
 
         return { order, payment };
+    }
+
+    private async redeemOrderDiscount(order: { discount?: { code?: string }; subtotal: number }) {
+        if (!order.discount?.code) {
+            return;
+        }
+        try {
+            const applied = await discountService.validateDiscount({
+                code: order.discount.code,
+                subtotal: order.subtotal,
+            });
+            await discountService.redeemDiscount(applied.discountId);
+        } catch {
+        }
     }
 
     private async restoreStock(order: { items: { productId: mongoose.Types.ObjectId; variantSku: string; quantity: number }[] }) {
@@ -130,13 +166,14 @@ export class OrderService {
         }
     }
 
-    async verifyPayment(userId: string, data: VerifyPaymentDto) {
+    async verifyPayment(userId: string, data: VerifyPaymentDto, context: RequestContext = {}) {
         const callback = decodeEsewaCallback(data.data);
         if (!callback || !callback.transaction_uuid) {
             throw new HttpError(400, "Invalid payment response");
         }
         if (!isCallbackSignatureValid(callback)) {
             logger.warn("eSewa callback signature mismatch", { transactionUuid: callback.transaction_uuid });
+            throw new HttpError(400, "Invalid payment signature");
         }
 
         const order = await orderRepository.getByTransactionUuid(callback.transaction_uuid);
@@ -162,6 +199,14 @@ export class OrderService {
                 orderId: order._id.toString(),
                 transactionUuid: order.transactionUuid,
             });
+            await activityLogService.record({
+                ...context,
+                action: "payment_failed",
+                status: "failure",
+                userId,
+                email: (await userRepository.getUserById(userId))?.email,
+                reason: order._id.toString(),
+            });
             throw new HttpError(400, "Payment was not completed. Your items have been released.");
         }
 
@@ -174,6 +219,14 @@ export class OrderService {
             orderId: order._id.toString(),
             paymentRef: callback.transaction_code,
         });
+        await activityLogService.record({
+            ...context,
+            action: "payment_verified",
+            status: "success",
+            userId,
+            email: (await userRepository.getUserById(userId))?.email,
+            reason: order._id.toString(),
+        });
 
         if (order.discount?.code) {
             try {
@@ -185,6 +238,37 @@ export class OrderService {
         await cartRepository.clearItems(userId);
 
         return paidOrder;
+    }
+
+    async releaseExpiredOrders(): Promise<number> {
+        const cutoff = new Date(Date.now() - ORDER_RESERVATION_MINUTES * 60 * 1000);
+        const expired = await orderRepository.getExpiredPendingOrders(cutoff);
+        let released = 0;
+
+        for (const order of expired) {
+            const claimed = await orderRepository.markExpiredIfPending(order._id.toString());
+            if (!claimed) {
+                continue;
+            }
+
+            await this.restoreStock(order);
+            released += 1;
+
+            logger.info("Released expired order reservation", {
+                orderId: order._id.toString(),
+                createdAt: order.createdAt,
+            });
+
+            await activityLogService.record({
+                action: "order_expired",
+                status: "failure",
+                userId: order.userId.toString(),
+                email: (await userRepository.getUserById(order.userId.toString()))?.email,
+                reason: order._id.toString(),
+            });
+        }
+
+        return released;
     }
 
     async getMyOrders(userId: string) {

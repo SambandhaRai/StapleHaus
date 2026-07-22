@@ -50,6 +50,22 @@ export const loginTwoFactor = async (challengeToken: string, code: string) => {
     }
 }
 
+export const changeExpiredPassword = async (expiredToken: string, newPassword: string) => {
+    try {
+        const response = await axios.post(
+            API.AUTH.PASSWORD_EXPIRED,
+            { expiredToken, newPassword }
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Could not update password"
+        );
+    }
+}
+
 export const verifyOtp = async (email: string, otp: string) => {
     try {
         const response = await axios.post(
@@ -82,11 +98,26 @@ export const resendOtp = async (email: string, captchaToken: string) => {
     }
 }
 
-export const googleLogin = async (credential: string, nonce: string) => {
+export const googleStart = async () => {
+    try {
+        const response = await axios.get(
+            API.AUTH.GOOGLE_START
+        );
+        return response.data;
+    } catch (err: Error | any) {
+        throw new Error(
+            err.response?.data?.message
+            || err.message
+            || "Could not start Google sign-in"
+        );
+    }
+}
+
+export const googleCallback = async (code: string, state: string, stateCookie: string) => {
     try {
         const response = await axios.post(
-            API.AUTH.GOOGLE,
-            { credential, nonce }
+            API.AUTH.GOOGLE_CALLBACK,
+            { code, state, stateCookie }
         );
         return response.data;
     } catch (err: Error | any) {

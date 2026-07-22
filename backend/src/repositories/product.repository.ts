@@ -1,3 +1,4 @@
+import { trusted } from "mongoose";
 import { ProductModel, IProduct } from "../models/product.model";
 import { BrandModel } from "../models/brand.model";
 import { ProductQueryDto } from "../dtos/product.dto";
@@ -50,19 +51,20 @@ export class ProductRepository implements IProductRepository {
         if (category) filter.category = category;
         if (brand) {
             const brandIds = brand.split(",").map((b) => b.trim()).filter(Boolean);
-            if (brandIds.length > 1) filter.brand = { $in: brandIds };
+            if (brandIds.length > 1) filter.brand = trusted({ $in: brandIds });
             else if (brandIds.length === 1) filter.brand = brandIds[0];
         }
         if (size) {
             const sizes = size.split(",").map((s) => s.trim()).filter(Boolean);
-            if (sizes.length > 1) filter["variants.size"] = { $in: sizes };
+            if (sizes.length > 1) filter["variants.size"] = trusted({ $in: sizes });
             else if (sizes.length === 1) filter["variants.size"] = sizes[0];
         }
         if (color) filter["variants.color"] = color;
         if (minPrice !== undefined || maxPrice !== undefined) {
-            filter.basePrice = {};
-            if (minPrice !== undefined) filter.basePrice.$gte = minPrice;
-            if (maxPrice !== undefined) filter.basePrice.$lte = maxPrice;
+            const priceFilter: Record<string, number> = {};
+            if (minPrice !== undefined) priceFilter.$gte = minPrice;
+            if (maxPrice !== undefined) priceFilter.$lte = maxPrice;
+            filter.basePrice = trusted(priceFilter);
         }
         if (q) {
             const term = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -71,7 +73,7 @@ export class ProductRepository implements IProductRepository {
             const matchingBrandIds = matchingBrands.map((b) => b._id);
             filter.$or = [
                 { name: regex },
-                ...(matchingBrandIds.length > 0 ? [{ brand: { $in: matchingBrandIds } }] : []),
+                ...(matchingBrandIds.length > 0 ? [{ brand: trusted({ $in: matchingBrandIds }) }] : []),
             ];
         }
 
@@ -118,7 +120,7 @@ export class ProductRepository implements IProductRepository {
 
     async decreaseStock(productId: string, sku: string, quantity: number): Promise<IProduct | null> {
         return await ProductModel.findOneAndUpdate(
-            { _id: productId, "variants.sku": sku, "variants.stock": { $gte: quantity } },
+            { _id: productId, "variants.sku": sku, "variants.stock": trusted({ $gte: quantity }) },
             { $inc: { "variants.$.stock": -quantity } },
             { returnDocument: "after" }
         );

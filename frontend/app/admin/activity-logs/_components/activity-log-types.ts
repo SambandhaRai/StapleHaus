@@ -21,6 +21,8 @@ export const ACTIVITY_ACTIONS = [
     "twofa_enable",
     "twofa_disable",
     "google_login",
+    "google_register",
+    "google_login_failed",
     "logout",
     "password_change",
     "password_reset_request",

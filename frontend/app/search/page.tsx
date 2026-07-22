@@ -6,8 +6,6 @@ import { ShopSort } from "@/app/(shop)/_components/shop-sort";
 import { ShopFilters } from "@/app/(shop)/_components/shop-filters";
 import { handleGetProducts } from "@/lib/actions/products-action";
 import { handleGetBrands } from "@/lib/actions/brands-action";
-import { handleGetWishlist } from "@/lib/actions/wishlist-action";
-import { getAuthToken } from "@/lib/cookie";
 
 interface SearchProduct {
     _id?: string;
@@ -65,23 +63,6 @@ const extractProducts = (res: unknown): ProductsResult => {
     return { products: [], page: 1, totalPages: 1, total: 0 };
 };
 
-const extractWishlistProductIds = (res: unknown): string[] => {
-    if (res && typeof res === "object" && "success" in res) {
-        const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
-        if (r.success && Array.isArray(r.data?.productIds)) {
-            return r.data.productIds
-                .map((item) => {
-                    if (item && typeof item === "object" && "_id" in item) {
-                        return String((item as { _id: unknown })._id);
-                    }
-                    return String(item);
-                })
-                .filter(Boolean);
-        }
-    }
-    return [];
-};
-
 interface SearchPageProps {
     searchParams: Promise<{
         q?: string;
@@ -95,8 +76,6 @@ interface SearchPageProps {
 }
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
-    const authToken = await getAuthToken();
-    const loggedIn = Boolean(authToken);
     const params = await searchParams;
     const query = (params.q || "").trim();
     const sort = params.sort || "newest";
@@ -132,7 +111,7 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         .map((slug) => brands.find((brand) => brand.slug === slug)?._id)
         .filter((id): id is string => Boolean(id));
 
-    const [productsRes, cheapestRes, dearestRes, wishlistRes] = await Promise.all([
+    const [productsRes, cheapestRes, dearestRes] = await Promise.all([
         handleGetProducts({
             q: query,
             sort: sort as "newest" | "price_asc" | "price_desc" | "rating",
@@ -145,11 +124,9 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
         }),
         handleGetProducts({ q: query, sort: "price_asc", limit: 1 }),
         handleGetProducts({ q: query, sort: "price_desc", limit: 1 }),
-        loggedIn ? handleGetWishlist() : Promise.resolve(null),
     ]);
 
     const { products, totalPages, total } = extractProducts(productsRes);
-    const wishlistedProductIds = extractWishlistProductIds(wishlistRes);
     const cheapest = extractProducts(cheapestRes).products[0]?.basePrice ?? 0;
     const dearest = extractProducts(dearestRes).products[0]?.basePrice ?? 0;
     const priceMin = Math.floor(cheapest);
@@ -203,8 +180,6 @@ export default async function SearchPage({ searchParams }: SearchPageProps) {
                                     <ProductCard
                                         key={product.slug}
                                         product={product}
-                                        loggedIn={loggedIn}
-                                        initialWishlisted={Boolean(product._id && wishlistedProductIds.includes(product._id))}
                                     />
                                 ))}
                             </div>

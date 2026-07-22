@@ -101,7 +101,7 @@ export default async function OrderDetailPage({
                                 </p>
                             </div>
                             <span className="label-caps border border-border px-4 py-2">
-                                {formatOrderStatus(order.paymentStatus, order.orderStatus)}
+                                {formatOrderStatus(order.paymentStatus, order.orderStatus, order.paymentMethod)}
                             </span>
                         </div>
 

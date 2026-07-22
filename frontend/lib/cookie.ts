@@ -57,9 +57,9 @@ export const clearAuthCookies = async () => {
     cookieStore.delete("user_data");
 };
 
-export const setGoogleNonce = async (nonce: string) => {
+export const setGoogleState = async (state: string) => {
     const cookieStore = await cookies();
-    cookieStore.set("google_nonce", nonce, {
+    cookieStore.set("google_state", state, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "lax",
@@ -68,14 +68,14 @@ export const setGoogleNonce = async (nonce: string) => {
     });
 }
 
-export const getGoogleNonce = async () => {
+export const getGoogleState = async () => {
     const cookieStore = await cookies();
-    return cookieStore.get("google_nonce")?.value || null;
+    return cookieStore.get("google_state")?.value || null;
 }
 
-export const clearGoogleNonce = async () => {
+export const clearGoogleState = async () => {
     const cookieStore = await cookies();
-    cookieStore.delete("google_nonce");
+    cookieStore.delete("google_state");
 };
 
 export const setTwoFactorChallenge = async (challengeToken: string) => {
@@ -97,4 +97,25 @@ export const getTwoFactorChallenge = async () => {
 export const clearTwoFactorChallenge = async () => {
     const cookieStore = await cookies();
     cookieStore.delete("twofa_challenge");
+};
+
+export const setPasswordExpiredChallenge = async (expiredToken: string) => {
+    const cookieStore = await cookies();
+    cookieStore.set("password_expired", expiredToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        path: "/",
+        maxAge: 60 * 10,
+    });
+};
+
+export const getPasswordExpiredChallenge = async () => {
+    const cookieStore = await cookies();
+    return cookieStore.get("password_expired")?.value || null;
+};
+
+export const clearPasswordExpiredChallenge = async () => {
+    const cookieStore = await cookies();
+    cookieStore.delete("password_expired");
 };

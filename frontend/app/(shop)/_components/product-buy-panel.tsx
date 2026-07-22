@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { Heart, Check } from "lucide-react";
 import { handleAddToCart } from "@/lib/actions/cart-action";
-import { handleAddToWishlist, handleRemoveFromWishlist } from "@/lib/actions/wishlist-action";
-import { useCart } from "@/app/_components/cart-provider";
+import { useCart } from "@/context/CartContext";
+import { useWishlist } from "@/context/WishlistContext";
 import { formatPrice as money } from "@/lib/format";
+
+const LOW_STOCK_THRESHOLD = 5;
 
 interface Variant {
     _id: string;
@@ -25,7 +27,6 @@ interface ProductBuyPanelProps {
     basePrice: number;
     variants: Variant[];
     loggedIn: boolean;
-    initialWishlisted: boolean;
     initialCartSkus: string[];
 }
 
@@ -36,16 +37,17 @@ export function ProductBuyPanel({
     basePrice,
     variants,
     loggedIn,
-    initialWishlisted,
     initialCartSkus,
 }: ProductBuyPanelProps) {
     const router = useRouter();
     const { addToCount } = useCart();
+    const { isWishlisted, toggle } = useWishlist();
     const [selectedSku, setSelectedSku] = useState<string | null>(null);
     const [adding, setAdding] = useState(false);
     const [wishing, setWishing] = useState(false);
-    const [wishlisted, setWishlisted] = useState(initialWishlisted);
     const [cartSkus, setCartSkus] = useState<string[]>(initialCartSkus);
+
+    const wishlisted = isWishlisted(productId);
 
     const selectedVariant = variants.find((variant) => variant.sku === selectedSku);
     const displayPrice = selectedVariant?.priceOverride ?? basePrice;
@@ -78,21 +80,9 @@ export function ProductBuyPanel({
     };
 
     const handleWishlist = async () => {
-        if (!loggedIn) {
-            router.push("/login");
-            return;
-        }
         setWishing(true);
-        const res = wishlisted
-            ? await handleRemoveFromWishlist(productId)
-            : await handleAddToWishlist(productId);
+        await toggle({ _id: productId, name });
         setWishing(false);
-        if (res.success) {
-            setWishlisted((current) => !current);
-            toast.success(res.message || (wishlisted ? "Removed from wishlist" : "Added to wishlist"));
-        } else {
-            toast.error(res.message || "Something went wrong");
-        }
     };
 
     return (
@@ -149,6 +139,14 @@ export function ProductBuyPanel({
                 ) : (
                     <p className="body-sm text-muted">Currently unavailable.</p>
                 )}
+
+                {selectedVariant && selectedVariant.stock > 0 && selectedVariant.stock <= LOW_STOCK_THRESHOLD ? (
+                    <p className="body-sm mt-3" style={{ color: "var(--color-danger)" }}>
+                        {selectedVariant.stock === 1
+                            ? "Last one left"
+                            : `Only ${selectedVariant.stock} left`}
+                    </p>
+                ) : null}
             </div>
 
             <button

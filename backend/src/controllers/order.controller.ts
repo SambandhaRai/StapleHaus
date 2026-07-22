@@ -1,6 +1,7 @@
 import { handleControllerError } from "../errors/handle-controller-error";
 import { CheckoutDto, UpdateOrderStatusDto, VerifyPaymentDto } from "../dtos/order.dto";
 import { OrderService } from "../services/order.service";
+import { getRequestContext } from "../utils/request-context";
 import { Request, Response } from "express";
 import z from "zod";
 
@@ -21,12 +22,12 @@ export class OrderController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { order, payment } = await orderService.checkout(userId, parsedData.data);
+            const { order, payment } = await orderService.checkout(userId, parsedData.data, getRequestContext(req));
             return res.status(201).json({
                 success: true,
                 data: order,
                 payment,
-                message: "Order created, redirecting to payment"
+                message: payment ? "Order created, redirecting to payment" : "Order placed, pay on delivery"
             });
         } catch (error: Error | any) {
             return handleControllerError(res, error);
@@ -46,7 +47,7 @@ export class OrderController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const order = await orderService.verifyPayment(userId, parsedData.data);
+            const order = await orderService.verifyPayment(userId, parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
                 data: order,

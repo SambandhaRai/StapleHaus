@@ -4,8 +4,6 @@ import { Navbar } from "@/app/_components/navigation/navbar";
 import { Footer } from "@/app/_components/footer";
 import { ProductCarousel } from "@/app/(shop)/_components/product-carousel";
 import { handleGetProducts } from "@/lib/actions/products-action";
-import { handleGetWishlist } from "@/lib/actions/wishlist-action";
-import { getAuthToken } from "@/lib/cookie";
 
 interface HomeProduct {
   _id?: string;
@@ -31,36 +29,14 @@ const extractProducts = (res: unknown): HomeProduct[] => {
   return [];
 };
 
-const extractWishlistProductIds = (res: unknown): string[] => {
-  if (res && typeof res === "object" && "success" in res) {
-    const r = res as { success?: boolean; data?: { productIds?: unknown[] } };
-    if (r.success && Array.isArray(r.data?.productIds)) {
-      return r.data.productIds
-        .map((item) => {
-          if (item && typeof item === "object" && "_id" in item) {
-            return String((item as { _id: unknown })._id);
-          }
-          return String(item);
-        })
-        .filter(Boolean);
-    }
-  }
-  return [];
-};
-
 export default async function Home() {
-  const authToken = await getAuthToken();
-  const loggedIn = Boolean(authToken);
-
-  const [mensRes, womensRes, wishlistRes] = await Promise.all([
+  const [mensRes, womensRes] = await Promise.all([
     handleGetProducts({ gender: "m", sort: "newest", limit: 12 }),
     handleGetProducts({ gender: "f", sort: "newest", limit: 12 }),
-    loggedIn ? handleGetWishlist() : Promise.resolve(null),
   ]);
 
   const mens = extractProducts(mensRes);
   const womens = extractProducts(womensRes);
-  const wishlistedProductIds = extractWishlistProductIds(wishlistRes);
 
   return (
     <div className="flex flex-1 flex-col bg-background text-foreground">
@@ -98,12 +74,7 @@ export default async function Home() {
           <Link className="label-caps link-underline" href="/men/shop">View all</Link>
         </div>
         {mens.length > 0 ? (
-          <ProductCarousel
-            products={mens}
-            priorityCount={5}
-            loggedIn={loggedIn}
-            wishlistedProductIds={wishlistedProductIds}
-          />
+          <ProductCarousel products={mens} priorityCount={5} />
         ) : (
           <p className="body-sm text-muted">No products available right now.</p>
         )}
@@ -115,11 +86,7 @@ export default async function Home() {
           <Link className="label-caps link-underline" href="/women/shop">View all</Link>
         </div>
         {womens.length > 0 ? (
-          <ProductCarousel
-            products={womens}
-            loggedIn={loggedIn}
-            wishlistedProductIds={wishlistedProductIds}
-          />
+          <ProductCarousel products={womens} />
         ) : (
           <p className="body-sm text-muted">No products available right now.</p>
         )}

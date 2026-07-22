@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
-import { useCart } from "@/app/_components/cart-provider";
+import { useCart } from "@/context/CartContext";
 
 export function CartBadge() {
     const { count } = useCart();

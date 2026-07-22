@@ -13,6 +13,7 @@ const ActivityLogSchema: Schema = new Schema({
 
 ActivityLogSchema.index({ createdAt: -1 });
 ActivityLogSchema.index({ email: 1, createdAt: -1 });
+ActivityLogSchema.index({ userId: 1, createdAt: -1 });
 
 ActivityLogSchema.set("toJSON", {
     transform: (_doc, ret) => {
