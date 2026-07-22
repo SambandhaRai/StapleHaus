@@ -173,6 +173,7 @@ export class OrderService {
         }
         if (!isCallbackSignatureValid(callback)) {
             logger.warn("eSewa callback signature mismatch", { transactionUuid: callback.transaction_uuid });
+            throw new HttpError(400, "Invalid payment signature");
         }
 
         const order = await orderRepository.getByTransactionUuid(callback.transaction_uuid);

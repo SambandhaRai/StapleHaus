@@ -1,5 +1,6 @@
 import z from "zod";
 import { BaseUserSchema, AddressSchema } from "../types/user.type";
+import { stripHtml } from "../utils/sanitize";
 
 export const RegisterUserDto = BaseUserSchema.pick({
     name: true,
@@ -42,7 +43,7 @@ export const LoginTwoFactorDto = z.object({
 export type LoginTwoFactorDto = z.infer<typeof LoginTwoFactorDto>;
 
 export const UpdateUserDto = z.object({
-    name: z.string().trim().min(2, "Name must be at least 2 characters").optional(),
+    name: z.string().trim().transform(stripHtml).pipe(z.string().min(2, "Name must be at least 2 characters")).optional(),
 });
 export type UpdateUserDto = z.infer<typeof UpdateUserDto>;
 
