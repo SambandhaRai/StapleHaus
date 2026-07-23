@@ -1,5 +1,6 @@
 "use server";
 
+import { assertCsrfToken } from "../csrf";
 import {
     getProductReviews,
     createReview,
@@ -45,8 +46,9 @@ export const handleCreateReview = async (productId: string, reviewData: ReviewPa
     }
 }
 
-export const handleDeleteReview = async (id: string) => {
+export const handleDeleteReview = async (id: string, csrfToken?: string) => {
     try {
+        await assertCsrfToken(csrfToken);
         const result = await deleteReview(id);
         if (result.success) {
             return {

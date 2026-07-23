@@ -7,6 +7,7 @@ import { Star, Trash2 } from "lucide-react";
 import { Button } from "@/app/_components/button";
 import { Textarea } from "@/app/_components/textarea";
 import { handleCreateReview, handleDeleteReview } from "@/lib/actions/reviews-action";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 type ReviewUser = {
     _id?: string;
@@ -180,7 +181,7 @@ export function ProductReviews({
 
     const handleDelete = async (reviewId: string) => {
         setDeletingId(reviewId);
-        const result = await handleDeleteReview(reviewId);
+        const result = await handleDeleteReview(reviewId, getCsrfToken());
         setDeletingId(null);
 
         if (!result.success) {

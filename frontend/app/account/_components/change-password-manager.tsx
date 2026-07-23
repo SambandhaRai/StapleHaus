@@ -6,6 +6,7 @@ import { Button } from "@/app/_components/button";
 import { PasswordField } from "@/app/(auth)/_components/password-field";
 import { PasswordStrength, passwordIsStrong } from "@/app/(auth)/_components/password-strength";
 import { handleChangePassword } from "@/lib/actions/users-action";
+import { getCsrfToken } from "@/lib/csrf-client";
 
 export function ChangePasswordManager() {
     const [open, setOpen] = useState(false);
@@ -36,7 +37,7 @@ export function ChangePasswordManager() {
         }
 
         setBusy(true);
-        const res = await handleChangePassword(currentPassword, newPassword);
+        const res = await handleChangePassword(currentPassword, newPassword, getCsrfToken());
         setBusy(false);
         if (!res.success) {
             toast.error(res.message || "Could not change password");

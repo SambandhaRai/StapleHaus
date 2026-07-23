@@ -1,5 +1,6 @@
 "use server";
 
+import { assertCsrfToken } from "../csrf";
 import {
     checkout,
     verifyPayment,
@@ -9,8 +10,9 @@ import {
     updateOrderStatus
 } from "../api/orders";
 
-export const handleCheckout = async (orderData: any) => {
+export const handleCheckout = async (orderData: any, csrfToken?: string) => {
     try {
+        await assertCsrfToken(csrfToken);
         const result = await checkout(orderData);
         if (result.success) {
             return {

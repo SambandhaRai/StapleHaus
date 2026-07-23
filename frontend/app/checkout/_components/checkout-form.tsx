@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { handleCheckout } from "@/lib/actions/orders-action";
+import { getCsrfToken } from "@/lib/csrf-client";
 import { handleAddAddress } from "@/lib/actions/users-action";
 import type {
     AppliedDiscount,
@@ -76,7 +77,7 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
             postalCode: addressForm.postalCode,
             country: "Nepal",
             phone: addressForm.phone,
-        });
+        }, getCsrfToken());
 
         if (!result.success) {
             throw new Error(result.message || "Failed to save address");
@@ -129,7 +130,7 @@ export function CheckoutForm({ user, cart }: CheckoutFormProps) {
                 addressId,
                 paymentMethod,
                 ...(discount?.code ? { discountCode: discount.code } : {}),
-            });
+            }, getCsrfToken());
 
             if (!result.success) {
                 toast.error(result.message || "Checkout failed");
