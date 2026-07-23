@@ -8,7 +8,8 @@ import { ProductGallery } from "./product-gallery";
 import { ProductBuyPanel } from "./product-buy-panel";
 import { ProductReviews, type ProductReview } from "./product-reviews";
 import { getUploadUrl } from "@/lib/uploads";
-import { getAuthToken, getUserData } from "@/lib/cookie";
+import { getAuthToken } from "@/lib/cookie";
+import { getCurrentUser } from "@/lib/current-user";
 import { handleGetProductBySlug, handleGetProducts } from "@/lib/actions/products-action";
 import { handleGetCart } from "@/lib/actions/cart-action";
 import { handleGetProductReviews } from "@/lib/actions/reviews-action";
@@ -108,7 +109,7 @@ interface ProductDetailProps {
 export async function ProductDetail({ slug }: ProductDetailProps) {
     const [authToken, currentUser] = await Promise.all([
         getAuthToken(),
-        getUserData(),
+        getCurrentUser(),
     ]);
     const loggedIn = Boolean(authToken);
 

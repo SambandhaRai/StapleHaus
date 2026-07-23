@@ -1,7 +1,7 @@
 "use server";
 
 import { addAddress, getProfile, setupTwoFactor, enableTwoFactor, disableTwoFactor, changePassword, getSessions, getActivityLogs, exportActivityLogs, revokeSession, revokeOtherSessions, type AddressPayload } from "../api/users";
-import { setUserData } from "../cookie";
+import { assertCsrfToken } from "../csrf";
 
 const getActionErrorMessage = (err: unknown, fallback: string) => {
     if (err instanceof Error && err.message) return err.message;
@@ -19,11 +19,11 @@ export const handleGetProfile = async () => {
     }
 };
 
-export const handleAddAddress = async (address: AddressPayload) => {
+export const handleAddAddress = async (address: AddressPayload, csrfToken?: string) => {
     try {
+        await assertCsrfToken(csrfToken);
         const result = await addAddress(address);
         if (result.success) {
-            await setUserData(result.data);
             return {
                 success: true,
                 data: result.data,
@@ -89,15 +89,10 @@ export const handleDisableTwoFactor = async (password: string) => {
     }
 };
 
-export const handleChangePassword = async (currentPassword: string, newPassword: string) => {
+export const handleChangePassword = async (currentPassword: string, newPassword: string, csrfToken?: string) => {
     try {
+        await assertCsrfToken(csrfToken);
         const result = await changePassword(currentPassword, newPassword);
-        if (result.success) {
-            const profile = await getProfile().catch(() => null);
-            if (profile?.success && profile.data) {
-                await setUserData(profile.data);
-            }
-        }
         return {
             success: Boolean(result.success),
             message: result.message,

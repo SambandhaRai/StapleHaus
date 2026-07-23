@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getAuthToken, getUserData } from "@/lib/cookie";
+import { getAuthToken } from "@/lib/cookie";
+import { getCurrentUser } from "@/lib/current-user";
 import { handleGetCategories } from "@/lib/actions/categories-action";
 import { MenuDrawer } from "./menu-drawer";
 import { AccountMenu } from "./account-menu";
@@ -24,7 +25,7 @@ const extractCategories = (res: unknown): CategoryRecord[] => {
 export async function Navbar() {
     const [authToken, user, categoriesRes] = await Promise.all([
         getAuthToken(),
-        getUserData(),
+        getCurrentUser(),
         handleGetCategories(),
     ]);
     const activeUser = authToken ? user : null;

@@ -3,7 +3,7 @@ import { Footer } from "@/app/_components/footer";
 import { Navbar } from "@/app/_components/navigation/navbar";
 import { handleGetCart } from "@/lib/actions/cart-action";
 import { handleGetProfile } from "@/lib/actions/users-action";
-import { getAuthToken, getUserData } from "@/lib/cookie";
+import { getAuthToken } from "@/lib/cookie";
 import { CheckoutForm } from "./_components/checkout-form";
 import type { CheckoutCart, CheckoutUser } from "./_components/checkout-types";
 
@@ -24,10 +24,7 @@ const extractUser = (res: unknown): CheckoutUser | null => {
 };
 
 export default async function CheckoutPage() {
-    const [authToken, cookieUser] = await Promise.all([
-        getAuthToken(),
-        getUserData(),
-    ]);
+    const authToken = await getAuthToken();
 
     if (!authToken) {
         return (
@@ -47,8 +44,22 @@ export default async function CheckoutPage() {
         handleGetProfile(),
         handleGetCart(),
     ]);
-    const user = extractUser(profileRes) || cookieUser;
+    const user = extractUser(profileRes);
     const cart = extractCart(cartRes);
+
+    if (!user) {
+        return (
+            <CheckoutShell>
+                <EmptyCheckoutState
+                    eyebrow="Checkout"
+                    title="Sign in to continue"
+                    description="Your checkout is connected to your account and saved bag."
+                    href="/login"
+                    action="Login"
+                />
+            </CheckoutShell>
+        );
+    }
 
     if (!cart?.items?.length) {
         return (

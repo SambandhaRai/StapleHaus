@@ -6,7 +6,8 @@ import "./globals.css";
 import { CartProvider } from "@/context/CartContext";
 import { WishlistProvider } from "@/context/WishlistContext";
 import { PasswordExpiryDialog } from "./_components/password-expiry-dialog";
-import { getAuthToken, getUserData } from "@/lib/cookie";
+import { getAuthToken } from "@/lib/cookie";
+import { getCurrentUser } from "@/lib/current-user";
 import { handleGetCart } from "@/lib/actions/cart-action";
 import { handleGetWishlist } from "@/lib/actions/wishlist-action";
 
@@ -65,7 +66,7 @@ export default async function RootLayout({
     : [null, null];
   const initialCartCount = extractCartCount(cartRes);
   const initialWishlistIds = extractWishlistIds(wishlistRes);
-  const userData = authToken ? await getUserData() : null;
+  const userData = authToken ? await getCurrentUser() : null;
   const passwordExpiresAt = typeof userData?.passwordExpiresAt === "string" ? userData.passwordExpiresAt : null;
 
   return (

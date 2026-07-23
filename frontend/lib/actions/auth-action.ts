@@ -3,7 +3,6 @@
 import { loginUser, loginTwoFactor, changeExpiredPassword, registerUser, verifyOtp, resendOtp, googleStart, googleCallback, logoutUser, forgotPassword, resetPassword } from "../api/auth";
 import {
     setAuthToken,
-    setUserData,
     clearAuthCookies,
     setGoogleState,
     getGoogleState,
@@ -44,7 +43,6 @@ export const handleVerifyOtp = async (email: string, otp: string) => {
         const result = await verifyOtp(email, otp);
         if (result.success) {
             await setAuthToken(result.token);
-            await setUserData(result.data);
 
             return {
                 success: true,
@@ -100,7 +98,6 @@ export const handleLogin = async (formData: any) => {
         }
         if (result.success) {
             await setAuthToken(result.token);
-            await setUserData(result.data);
 
             return {
                 success: true,
@@ -141,7 +138,6 @@ export const handleVerifyLoginTwoFactor = async (code: string) => {
         }
         if (result.success) {
             await setAuthToken(result.token);
-            await setUserData(result.data);
             await clearTwoFactorChallenge();
 
             return {
@@ -175,7 +171,6 @@ export const handleChangeExpiredPassword = async (newPassword: string) => {
         if (result.success) {
             await clearPasswordExpiredChallenge();
             await setAuthToken(result.token);
-            await setUserData(result.data);
 
             return {
                 success: true,
@@ -232,7 +227,6 @@ export const completeGoogleLogin = async (code: string, state: string) => {
         }
         if (result.success) {
             await setAuthToken(result.token);
-            await setUserData(result.data);
 
             return {
                 success: true,
