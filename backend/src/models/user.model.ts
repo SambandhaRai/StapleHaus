@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { AddressType, UserRoleType } from "../types/user.type";
 import { computePasswordExpiresAt } from "../utils/password-age";
+import { decryptAddress } from "../utils/crypto";
 
 export const AddressSchema: Schema = new Schema({
     label: { type: String, required: true, trim: true },
@@ -56,6 +57,11 @@ UserSchema.set("toJSON", {
         delete serialized.passwordResetTokenHash;
         delete serialized.passwordResetExpiresAt;
         delete serialized.__v;
+        if (Array.isArray(serialized.addresses)) {
+            serialized.addresses = serialized.addresses.map((address) =>
+                decryptAddress(address as Record<string, unknown>)
+            );
+        }
         return ret;
     },
 });

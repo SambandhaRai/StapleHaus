@@ -21,3 +21,33 @@ export const decryptSecret = (payload: string): string => {
     const decrypted = Buffer.concat([decipher.update(Buffer.from(dataHex, "hex")), decipher.final()]);
     return decrypted.toString("utf8");
 };
+
+const ADDRESS_ENCRYPTED_FIELDS = ["line1", "line2", "city", "state", "postalCode", "country", "phone"];
+
+const looksEncrypted = (value: string): boolean => /^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(value);
+
+export const encryptAddress = <T extends Record<string, unknown>>(address: T): T => {
+    const result: Record<string, unknown> = { ...address };
+    for (const field of ADDRESS_ENCRYPTED_FIELDS) {
+        const value = result[field];
+        if (typeof value === "string" && value.length > 0 && !looksEncrypted(value)) {
+            result[field] = encryptSecret(value);
+        }
+    }
+    return result as T;
+};
+
+export const decryptAddress = <T extends Record<string, unknown>>(address: T): T => {
+    const result: Record<string, unknown> = { ...address };
+    for (const field of ADDRESS_ENCRYPTED_FIELDS) {
+        const value = result[field];
+        if (typeof value === "string" && looksEncrypted(value)) {
+            try {
+                result[field] = decryptSecret(value);
+            } catch {
+                result[field] = value;
+            }
+        }
+    }
+    return result as T;
+};

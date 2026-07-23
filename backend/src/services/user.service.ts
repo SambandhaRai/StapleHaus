@@ -5,7 +5,7 @@ import { JWT_SECRET, JWT_EXPIRES_IN, FRONTEND_URL } from "../config";
 import { computePasswordExpiresAt } from "../utils/password-age";
 import { RegisterUserDto, LoginUserDto, UpdateUserDto, CreateAddressDto, UpdateAddressDto, VerifyOtpDto, ResendOtpDto, LoginTwoFactorDto, ChangePasswordDto, ChangeExpiredPasswordDto, ForgotPasswordDto, ResetPasswordDto } from "../dtos/user.dto";
 import { sendEmail } from "../config/email";
-import { encryptSecret, decryptSecret } from "../utils/crypto";
+import { encryptSecret, decryptSecret, encryptAddress } from "../utils/crypto";
 import { isPasswordBreached } from "../utils/pwned";
 import { ActivityLogService } from "./activity-log.service";
 import { SessionService } from "./session.service";
@@ -20,7 +20,7 @@ import * as OTPAuth from "otpauth";
 
 const TWO_FACTOR_ISSUER = "StapleHaus";
 
-const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const MAX_FAILED_LOGIN_ATTEMPTS = 10;
 const ACCOUNT_LOCK_MS = 15 * 60 * 1000;
 const PASSWORD_HISTORY_LIMIT = 5;
 const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
@@ -879,7 +879,7 @@ export class UserService {
     }
 
     async addAddress(userId: string, address: CreateAddressDto) {
-        const updatedUser = await userRepository.addAddress(userId, address);
+        const updatedUser = await userRepository.addAddress(userId, encryptAddress(address));
         if (!updatedUser) {
             throw new HttpError(404, "User not found");
         }
@@ -890,7 +890,7 @@ export class UserService {
         if (!mongoose.Types.ObjectId.isValid(addressId)) {
             throw new HttpError(400, "Invalid address ID");
         }
-        const updatedUser = await userRepository.updateAddress(userId, addressId, patch);
+        const updatedUser = await userRepository.updateAddress(userId, addressId, encryptAddress(patch));
         if (!updatedUser) {
             throw new HttpError(404, "Address not found");
         }

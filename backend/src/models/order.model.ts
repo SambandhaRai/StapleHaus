@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { AddressSchema } from "./user.model";
 import { OrderStatusType, PaymentStatusType } from "../types/order.type";
+import { decryptAddress } from "../utils/crypto";
 
 const OrderItemSchema: Schema = new Schema({
     productId: { type: Schema.Types.ObjectId, ref: "Product", required: true },
@@ -32,7 +33,11 @@ const OrderSchema: Schema = new Schema({
 
 OrderSchema.set("toJSON", {
     transform: (_doc, ret) => {
-        delete (ret as Record<string, unknown>).__v;
+        const serialized = ret as Record<string, unknown>;
+        delete serialized.__v;
+        if (serialized.shippingAddress) {
+            serialized.shippingAddress = decryptAddress(serialized.shippingAddress as Record<string, unknown>);
+        }
         return ret;
     },
 });
