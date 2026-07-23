@@ -27,7 +27,7 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   devIndicators: false,
-  allowedDevOrigins: ["192.168.1.*", "192.168.239.*", "localhost", "10.1.19.*"],
+  allowedDevOrigins: ["192.168.1.*", "192.168.239.*", "localhost"],
   experimental: {
     serverActions: {
       bodySizeLimit: "8mb",
@@ -36,6 +36,12 @@ const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowLocalIP: true,
     remotePatterns: [
+      {
+        hostname: "backend",
+        port: "5050",
+        protocol: "https",
+        pathname: "/uploads/**",
+      },
       {
         hostname: "localhost",
         port: "5050",

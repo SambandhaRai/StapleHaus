@@ -19,6 +19,7 @@ services:
       - "5050:5050"
     volumes:
       - backend_uploads:/app/uploads
+      - ./backend/certs:/app/certs:ro
     restart: unless-stopped
 
   seed-admin:
@@ -49,9 +50,16 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_BASE_URL: http://backend:5050
+        NEXT_PUBLIC_API_BASE_URL: https://backend:5050
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
+    env_file:
+      - ./frontend/.env
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: https://backend:5050
+      NODE_EXTRA_CA_CERTS: /certs/rootCA.pem
+    volumes:
+      - ./backend/certs:/certs:ro
     depends_on:
       - backend
     restart: unless-stopped
