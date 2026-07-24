@@ -20,7 +20,8 @@ export interface IDiscountRepository {
     getDiscountByCode(code: string): Promise<IDiscount | null>;
     updateOneDiscount(id: string, data: UpdateDiscountData): Promise<IDiscount | null>;
     deleteOneDiscount(id: string): Promise<boolean | null>;
-    incrementUsage(id: string): Promise<IDiscount | null>;
+    reserveUsage(id: string): Promise<IDiscount | null>;
+    releaseUsage(id: string): Promise<IDiscount | null>;
 }
 
 export class DiscountRepository implements IDiscountRepository {
@@ -50,10 +51,26 @@ export class DiscountRepository implements IDiscountRepository {
         return result ? true : null;
     }
 
-    async incrementUsage(id: string): Promise<IDiscount | null> {
-        return await DiscountModel.findByIdAndUpdate(
-            id,
+    async reserveUsage(id: string): Promise<IDiscount | null> {
+        return await DiscountModel.findOneAndUpdate(
+            {
+                _id: id,
+                isActive: true,
+                $or: [
+                    { usageLimit: { $exists: false } },
+                    { usageLimit: null },
+                    { $expr: { $lt: ["$usedCount", "$usageLimit"] } },
+                ],
+            },
             { $inc: { usedCount: 1 } },
+            { returnDocument: "after" }
+        );
+    }
+
+    async releaseUsage(id: string): Promise<IDiscount | null> {
+        return await DiscountModel.findOneAndUpdate(
+            { _id: id, usedCount: { $gt: 0 } },
+            { $inc: { usedCount: -1 } },
             { returnDocument: "after" }
         );
     }

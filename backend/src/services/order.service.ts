@@ -77,22 +77,35 @@ export class OrderService {
         subtotal = round2(subtotal);
 
         let discount: { code?: string; amount: number } = { amount: 0 };
+        let appliedDiscountId: string | undefined;
         if (data.discountCode) {
             const applied = await discountService.validateDiscount({ code: data.discountCode, subtotal });
             discount = { code: applied.code, amount: applied.amount };
+            appliedDiscountId = applied.discountId;
         }
 
         const total = round2(subtotal - discount.amount);
 
-        for (const item of cart.items) {
-            const updated = await productRepository.decreaseStock(
-                item.productId.toString(),
-                item.variantSku,
-                item.quantity
-            );
-            if (!updated) {
-                throw new HttpError(400, "Stock changed during checkout, please review your cart and try again");
+        if (appliedDiscountId && discount.code) {
+            await discountService.reserveUsage(appliedDiscountId, discount.code, userId);
+        }
+
+        try {
+            for (const item of cart.items) {
+                const updated = await productRepository.decreaseStock(
+                    item.productId.toString(),
+                    item.variantSku,
+                    item.quantity
+                );
+                if (!updated) {
+                    throw new HttpError(400, "Stock changed during checkout, please review your cart and try again");
+                }
             }
+        } catch (error) {
+            if (discount.code) {
+                await discountService.releaseUsage(discount.code, userId);
+            }
+            throw error;
         }
 
         const shippingAddress = {
@@ -132,7 +145,6 @@ export class OrderService {
         });
 
         if (isCod) {
-            await this.redeemOrderDiscount(order);
             await cartRepository.clearItems(userId);
             return { order, payment: null };
         }
@@ -142,20 +154,6 @@ export class OrderService {
         return { order, payment };
     }
 
-    private async redeemOrderDiscount(order: { discount?: { code?: string }; subtotal: number }) {
-        if (!order.discount?.code) {
-            return;
-        }
-        try {
-            const applied = await discountService.validateDiscount({
-                code: order.discount.code,
-                subtotal: order.subtotal,
-            });
-            await discountService.redeemDiscount(applied.discountId);
-        } catch {
-        }
-    }
-
     private async restoreStock(order: { items: { productId: mongoose.Types.ObjectId; variantSku: string; quantity: number }[] }) {
         for (const item of order.items) {
             await productRepository.increaseStock(
@@ -163,6 +161,12 @@ export class OrderService {
                 item.variantSku,
                 item.quantity
             );
+        }
+    }
+
+    private async restoreDiscount(order: { userId: mongoose.Types.ObjectId | string; discount?: { code?: string } }) {
+        if (order.discount?.code) {
+            await discountService.releaseUsage(order.discount.code, order.userId.toString());
         }
     }
 
@@ -191,6 +195,7 @@ export class OrderService {
 
         if (!isComplete) {
             await this.restoreStock(order);
+            await this.restoreDiscount(order);
             await orderRepository.updatePaymentResult(order._id.toString(), {
                 paymentStatus: "failed",
                 orderStatus: "cancelled",
@@ -228,13 +233,6 @@ export class OrderService {
             reason: order._id.toString(),
         });
 
-        if (order.discount?.code) {
-            try {
-                const applied = await discountService.validateDiscount({ code: order.discount.code, subtotal: order.subtotal });
-                await discountService.redeemDiscount(applied.discountId);
-            } catch {
-            }
-        }
         await cartRepository.clearItems(userId);
 
         return paidOrder;
@@ -252,6 +250,7 @@ export class OrderService {
             }
 
             await this.restoreStock(order);
+            await this.restoreDiscount(order);
             released += 1;
 
             logger.info("Released expired order reservation", {

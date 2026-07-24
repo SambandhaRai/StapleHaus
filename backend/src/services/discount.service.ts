@@ -1,9 +1,11 @@
 import { DiscountRepository } from "../repositories/discount.repository";
+import { DiscountRedemptionRepository } from "../repositories/discount-redemption.repository";
 import { CreateDiscountDto, UpdateDiscountDto, ValidateDiscountDto } from "../dtos/discount.dto";
 import { HttpError } from "../errors/http-error";
 import mongoose from "mongoose";
 
 let discountRepository = new DiscountRepository();
+let discountRedemptionRepository = new DiscountRedemptionRepository();
 
 export type AppliedDiscount = {
     discountId: string;
@@ -49,8 +51,28 @@ export class DiscountService {
         };
     }
 
-    async redeemDiscount(discountId: string) {
-        await discountRepository.incrementUsage(discountId);
+    async reserveUsage(discountId: string, code: string, userId: string) {
+        const reserved = await discountRepository.reserveUsage(discountId);
+        if (!reserved) {
+            throw new HttpError(400, "This discount code has reached its usage limit");
+        }
+        try {
+            await discountRedemptionRepository.create(code, userId);
+        } catch (error) {
+            await discountRepository.releaseUsage(discountId);
+            if ((error as { code?: number }).code === 11000) {
+                throw new HttpError(400, "You have already used this discount code");
+            }
+            throw error;
+        }
+    }
+
+    async releaseUsage(code: string, userId: string) {
+        const discount = await discountRepository.getDiscountByCode(code);
+        if (discount) {
+            await discountRepository.releaseUsage(discount._id.toString());
+        }
+        await discountRedemptionRepository.remove(code, userId);
     }
 
     async createDiscount(data: CreateDiscountDto) {
