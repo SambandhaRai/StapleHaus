@@ -4,10 +4,6 @@ import { RECAPTCHA_SECRET } from "../config";
 const VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify";
 
 export const verifyCaptcha = async (req: Request, res: Response, next: NextFunction) => {
-    if (!RECAPTCHA_SECRET) {
-        return next();
-    }
-
     const token = req.body?.captchaToken;
     if (!token || typeof token !== "string") {
         return res.status(400).json({ success: false, message: "Captcha verification required" });

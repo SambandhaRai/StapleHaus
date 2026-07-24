@@ -36,7 +36,11 @@ const orderReservationMinutes = Number(process.env.ORDER_RESERVATION_MINUTES);
 export const ORDER_RESERVATION_MINUTES: number =
     Number.isFinite(orderReservationMinutes) && orderReservationMinutes > 0 ? orderReservationMinutes : 30;
 export const ESEWA_PRODUCT_CODE: string = process.env.ESEWA_PRODUCT_CODE || "EPAYTEST";
-export const ESEWA_SECRET: string = process.env.ESEWA_SECRET || "8gBm/:&EnhH.1/q";
+const esewaSecret = process.env.ESEWA_SECRET;
+if (!esewaSecret) {
+    throw new Error("ESEWA_SECRET must be set");
+}
+export const ESEWA_SECRET: string = esewaSecret;
 export const ESEWA_FORM_URL: string = process.env.ESEWA_FORM_URL || "https://rc-epay.esewa.com.np/api/epay/main/v2/form";
 export const ESEWA_STATUS_URL: string = process.env.ESEWA_STATUS_URL || "https://rc.esewa.com.np/api/epay/transaction/status/";
 export const ALERT_EMAIL: string = process.env.ALERT_EMAIL || process.env.SMTP_USER || "";
