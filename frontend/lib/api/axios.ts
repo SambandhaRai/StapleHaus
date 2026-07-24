@@ -26,6 +26,9 @@ axiosInstance.interceptors.request.use(
             if (clientIp && config.headers) {
                 config.headers["x-client-ip"] = clientIp;
             }
+            if (process.env.INTERNAL_PROXY_SECRET && config.headers) {
+                config.headers["x-internal-proxy-secret"] = process.env.INTERNAL_PROXY_SECRET;
+            }
         } catch {
         }
         return config;

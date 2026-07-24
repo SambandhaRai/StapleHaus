@@ -15,8 +15,6 @@ services:
       FRONTEND_URL: https://localhost
     depends_on:
       - mongo
-    ports:
-      - "5050:5050"
     volumes:
       - backend_uploads:/app/uploads
       - ./backend/certs:/app/certs:ro

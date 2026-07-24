@@ -17,7 +17,16 @@ export const GOOGLE_CLIENT_ID: string = process.env.GOOGLE_CLIENT_ID || "";
 export const GOOGLE_CLIENT_SECRET: string = process.env.GOOGLE_CLIENT_SECRET || "";
 export const GOOGLE_CALLBACK_URL: string =
     process.env.GOOGLE_CALLBACK_URL || `${FRONTEND_URL}/api/auth/google/callback`;
-export const RECAPTCHA_SECRET: string = process.env.RECAPTCHA_SECRET || "";
+const recaptchaSecret = process.env.RECAPTCHA_SECRET;
+if (!recaptchaSecret) {
+    throw new Error("RECAPTCHA_SECRET must be set");
+}
+export const RECAPTCHA_SECRET: string = recaptchaSecret;
+const internalProxySecret = process.env.INTERNAL_PROXY_SECRET;
+if (!internalProxySecret || internalProxySecret.length < 32) {
+    throw new Error("INTERNAL_PROXY_SECRET must be set to a random value of at least 32 characters");
+}
+export const INTERNAL_PROXY_SECRET: string = internalProxySecret;
 const twoFactorEncKey = process.env.TWO_FACTOR_ENC_KEY;
 if (!twoFactorEncKey || !/^[0-9a-fA-F]{64}$/.test(twoFactorEncKey)) {
     throw new Error("TWO_FACTOR_ENC_KEY must be set to 64 hex characters (32 random bytes)");
