@@ -24,10 +24,10 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
-            const { user } = await userService.registerUser(parsedData.data, getRequestContext(req));
+            await userService.registerUser(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
-                data: user,
+                data: null,
                 message: "If this email needs verification, a code will be sent"
             });
         } catch (error: Error | any) {

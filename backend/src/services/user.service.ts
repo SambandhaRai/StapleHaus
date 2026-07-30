@@ -25,6 +25,7 @@ const ACCOUNT_LOCK_MS = 15 * 60 * 1000;
 const PASSWORD_HISTORY_LIMIT = 5;
 const PASSWORD_RESET_TTL_MS = 15 * 60 * 1000;
 const PASSWORD_EXPIRED_TOKEN_TTL = "10m";
+const DUMMY_PASSWORD_HASH = "$2b$10$WMI1YDZ83de5d8dANZUBeuFc6mIIudXcgxOtWq5jw2iqbWmHpNBDS";
 
 const createTotp = (base32Secret: string, label?: string) =>
     new OTPAuth.TOTP({
@@ -317,6 +318,7 @@ export class UserService {
     async loginUser(data: LoginUserDto, context: RequestContext = {}) {
         const existingUser = await userRepository.getUserByEmail(data.email);
         if (!existingUser || !existingUser.password) {
+            await bcryptjs.compare(data.password, DUMMY_PASSWORD_HASH);
             await activityLogService.record({
                 ...context,
                 action: "login_failed",
