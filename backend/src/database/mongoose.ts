@@ -13,6 +13,10 @@ export async function connectDatabase(
 ) {
     const { exitOnError = true } = options;
     try {
+        // NoSQL injection prevention: with sanitizeFilter on, Mongoose wraps any
+        // operator object an attacker sneaks into a query (e.g. a `password`
+        // field submitted as {"$ne": null}) so it's treated as a literal value
+        // to match, instead of being executed as a query operator.
         mongoose.set("sanitizeFilter", true);
         await mongoose.connect(uri);
         logger.info("Database connected successfully");

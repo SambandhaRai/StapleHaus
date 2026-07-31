@@ -3,8 +3,14 @@ import { RECAPTCHA_SECRET } from "../config";
 
 const VERIFY_URL = "https://www.google.com/recaptcha/api/siteverify";
 
+// Anti-automation control for auth endpoints (login/register/forgot-password):
+// makes it impractical to script large-scale brute-force, credential-stuffing,
+// or account-enumeration attempts against these routes.
 export const verifyCaptcha = async (req: Request, res: Response, next: NextFunction) => {
     const token = req.body?.captchaToken;
+    // Strict type check: a non-string value (e.g. a bare JSON number like
+    // 12345) is rejected here rather than being forwarded to Google, since
+    // only a real string token could ever verify successfully anyway.
     if (!token || typeof token !== "string") {
         return res.status(400).json({ success: false, message: "Captcha verification required" });
     }

@@ -67,6 +67,10 @@ export class ProductRepository implements IProductRepository {
             filter.basePrice = trusted(priceFilter);
         }
         if (q) {
+            // Escapes regex metacharacters in user-supplied search text before it's
+            // built into a MongoDB regex query. Without this, a query like ".*" or
+            // a crafted pattern could be used for a denial-of-service (catastrophic
+            // backtracking) or to widen the search into an unintended match.
             const term = q.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const regex = new RegExp(term, "i");
             const matchingBrands = await BrandModel.find({ name: regex }).select("_id");

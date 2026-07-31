@@ -1,8 +1,14 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 import { TWO_FACTOR_ENC_KEY } from "../config";
 
+// Encryption at rest: sensitive fields (2FA secrets, address details) are
+// stored encrypted rather than in plaintext, so a database dump/leak alone
+// isn't enough to read them without this server-side key.
 const key = Buffer.from(TWO_FACTOR_ENC_KEY, "hex");
 
+// AES-256-GCM is authenticated encryption: a fresh random IV per value stops
+// identical plaintexts from producing identical ciphertext, and the auth tag
+// lets decryptSecret() detect if the ciphertext was tampered with.
 export const encryptSecret = (plaintext: string): string => {
     const iv = randomBytes(12);
     const cipher = createCipheriv("aes-256-gcm", key, iv);

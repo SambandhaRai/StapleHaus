@@ -32,12 +32,23 @@ export const authorizedMiddleware = async (req: Request, res: Response, next: Ne
             throw new HttpError(401, "Authorization token missing");
         }
 
+        // jwt.verify() rejects a forged/modified signature and, since no
+        // "algorithms" override is passed, also rejects an attacker-crafted
+        // {"alg":"none"} token via the library's own safe default.
         const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
 
+        // A JWT can be valid but issued for a different purpose (e.g. a 2FA
+        // challenge or password-reset token) — reject anything that isn't a
+        // real login session token from being used as one.
         if (decoded.purpose !== "session") {
             throw new HttpError(401, "Invalid token");
         }
 
+        // Session hijacking / stale-token prevention: a JWT can stay
+        // cryptographically valid after logout, so every request is checked
+        // against a server-side session record too. This is what actually
+        // lets logout, device-mismatch, and idle-timeout revoke access even
+        // though the JWT itself hasn't expired yet (see session.service.ts).
         const session = await sessionService.validateSession(decoded.jti, decoded.id, getRequestContext(req));
         if (!session) {
             throw new HttpError(401, "Session expired or revoked");
@@ -77,6 +88,10 @@ export const adminOnlyMiddleware = async (req: Request, res: Response, next: Nex
             throw new HttpError(401, "Authentication required");
         }
 
+        // Broken-access-control / privilege-escalation prevention: the role is
+        // re-read from the database instead of trusting decoded.role from the
+        // JWT payload, so a demoted admin's still-valid token (or a tampered
+        // claim) can't be used to keep or gain admin access.
         const user = await userRepository.getUserById(req.user.id);
         if (!user || user.role !== "admin") {
             throw new HttpError(403, "Admin access required");

@@ -27,8 +27,15 @@ import ipAccessRoutes from "./routes/ip-access.routes";
 
 const app: Application = express();
 
+// NoSQL injection prevention: Express's default "extended" query parser turns
+// bracket syntax like ?field[$ne]=x into a nested object, which is exactly the
+// shape a NoSQL operator injection needs. The "simple" parser never builds
+// that nested structure, so query-string operator injection has no way in.
 app.set("query parser", "simple");
 
+// helmet sets a batch of security response headers (CSP, X-Content-Type-Options,
+// X-Frame-Options/frame-ancestors, HSTS, etc.), which is defense-in-depth against
+// XSS, clickjacking, and MIME-sniffing attacks even when the app-level fixes below hold.
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
 const allowedOrigins = [
@@ -49,6 +56,9 @@ const getHeaderOrigin = (value?: string) => {
     }
 };
 
+// CORS allow-list: only the known frontend origins can read cross-origin
+// responses from the browser. Requests from any other site are rejected here
+// before they reach a route handler.
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
@@ -62,6 +72,11 @@ const corsOptions: CorsOptions = {
 };
 app.use(cors(corsOptions));
 
+// CSRF defense-in-depth for the Bearer-token API: browsers still send Origin/
+// Referer on state-changing requests even when the CORS check above can be
+// spoofed by non-browser clients, so this independently blocks any
+// POST/PUT/PATCH/DELETE whose Origin (or Referer, as a fallback) isn't one of
+// our own frontends, regardless of what CORS decided.
 app.use((req: Request, res: Response, next: NextFunction) => {
     if (!unsafeMethods.has(req.method)) {
         next();
@@ -80,6 +95,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use(ipAccessMiddleware);
 app.use(globalLimiter);
 
+// Caps request body size so a malicious or malformed oversized payload can't
+// be used to exhaust server memory (a basic denial-of-service guard).
 app.use(bodyParser.json({ limit: "100kb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads"), {
     setHeaders: (res) => {

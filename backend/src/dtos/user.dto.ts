@@ -2,6 +2,9 @@ import z from "zod";
 import { BaseUserSchema, AddressSchema } from "../types/user.type";
 import { stripHtml } from "../utils/sanitize";
 
+// Mass-assignment prevention: .pick() only allow-lists name/email/password, so
+// a request body with extra fields like {"role":"admin","isEmailVerified":true}
+// has those fields silently dropped before they ever reach the service/DB layer.
 export const RegisterUserDto = BaseUserSchema.pick({
     name: true,
     email: true,
@@ -42,6 +45,10 @@ export const LoginTwoFactorDto = z.object({
 });
 export type LoginTwoFactorDto = z.infer<typeof LoginTwoFactorDto>;
 
+// Same mass-assignment defence for profile edits: the ONLY editable field is
+// name, so a body containing {"role":"admin"} or similar privilege-escalation
+// attempts can't reach the update. `name` is also run through stripHtml()
+// here so a malicious display name can't carry a stored-XSS payload.
 export const UpdateUserDto = z.object({
     name: z.string().trim().transform(stripHtml).pipe(z.string().min(2, "Name must be at least 2 characters")).optional(),
 });

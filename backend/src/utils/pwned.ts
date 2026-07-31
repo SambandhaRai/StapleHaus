@@ -3,6 +3,10 @@ import { logger } from "./logger";
 
 const HIBP_RANGE_URL = "https://api.pwnedpasswords.com/range/";
 
+// Checks a password against Have I Been Pwned's breach database using
+// k-anonymity: only the first 5 hash characters are sent to the API, and the
+// full match happens locally, so the real password (or even its full hash)
+// never leaves the server.
 export const isPasswordBreached = async (password: string): Promise<boolean> => {
     try {
         const sha1 = createHash("sha1").update(password).digest("hex").toUpperCase();

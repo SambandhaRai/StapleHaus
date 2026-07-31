@@ -24,10 +24,13 @@ export class AuthController {
                     errors: z.prettifyError(parsedData.error)
                 });
             }
+            // Result is discarded, not returned. Previously, a new email got the full
+            // user object back while an existing email got nothing — the size/shape
+            // of the response let an attacker tell which emails were already registered.
             await userService.registerUser(parsedData.data, getRequestContext(req));
             return res.status(200).json({
                 success: true,
-                data: null,
+                data: null, // always null, so new vs. existing emails look identical
                 message: "If this email needs verification, a code will be sent"
             });
         } catch (error: Error | any) {

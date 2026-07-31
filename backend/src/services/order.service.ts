@@ -45,6 +45,9 @@ export class OrderService {
             throw new HttpError(400, "Your cart is empty");
         }
 
+        // Business-logic integrity: price and stock are re-read from MongoDB
+        // here rather than trusted from the cart/client, so a tampered client
+        // request can't change what the customer is actually charged.
         const orderItems: Omit<IOrderItem, "_id">[] = [];
         let subtotal = 0;
 
@@ -175,6 +178,10 @@ export class OrderService {
         if (!callback || !callback.transaction_uuid) {
             throw new HttpError(400, "Invalid payment response");
         }
+        // Payment integrity: the eSewa callback is signature-verified (and its
+        // status re-checked directly with eSewa below) instead of trusting
+        // whatever "paid" flag the browser redirect claims, so a forged
+        // callback can't mark an unpaid order as paid.
         if (!isCallbackSignatureValid(callback)) {
             logger.warn("eSewa callback signature mismatch", { transactionUuid: callback.transaction_uuid });
             throw new HttpError(400, "Invalid payment signature");
@@ -278,6 +285,11 @@ export class OrderService {
         if (!mongoose.Types.ObjectId.isValid(orderId)) {
             throw new HttpError(400, "Invalid order ID");
         }
+        // IDOR prevention: userId comes from the verified session (authorization
+        // middleware), not from anything the client supplies, so guessing or
+        // incrementing another order's ID in the URL still fails this ownership
+        // check. Both "doesn't exist" and "exists but isn't yours" should read
+        // as a generic not-found to the caller so order IDs can't be enumerated.
         const order = await orderRepository.getOrderById(orderId);
         if (!order) {
             throw new HttpError(404, "Order not found");

@@ -36,6 +36,9 @@ export class SessionService {
         if (!session || session.userId.toString() !== userId) {
             return null;
         }
+        // Explicit revocation check: this is what makes logout (and
+        // "revoke this device") actually invalidate a token immediately,
+        // instead of relying on it to expire naturally on its own.
         if (session.revokedAt) {
             return null;
         }
@@ -44,10 +47,17 @@ export class SessionService {
         if (session.expiresAt.getTime() < now) {
             return null;
         }
+        // Idle timeout: a session unused for too long is revoked even if it
+        // hasn't hit its absolute expiry, shrinking the window a stolen-but-
+        // unused token stays usable.
         if (now - session.lastUsedAt.getTime() > SESSION_IDLE_TTL_MS) {
             await sessionRepository.revokeSession(sessionId, new Date());
             return null;
         }
+        // Device binding: a session created under one User-Agent is rejected
+        // if replayed from a different one. This is a weak signal (trivially
+        // spoofable) so treat it as defense-in-depth, not strong proof of device
+        // identity, but it does raise the bar for a copy-pasted stolen token.
         if (session.userAgent && context.userAgent && session.userAgent !== context.userAgent) {
             return null;
         }

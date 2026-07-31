@@ -219,10 +219,17 @@ export class UserService {
             return { user: null };
         }
 
+        // Rejects passwords already known to be compromised in public breaches
+        // (see pwned.ts), on top of the length/complexity rules enforced by
+        // the DTO's Zod schema.
         if (await isPasswordBreached(data.password)) {
             throw new HttpError(400, "This password has appeared in a known data breach. Please choose a different one.");
         }
 
+        // Secure password storage: bcrypt is a slow, salted hash (cost factor
+        // 10), so even a stolen password table can't be feasibly reversed with
+        // rainbow tables or brute force the way a fast hash (e.g. plain SHA-256)
+        // could be.
         const password = await bcryptjs.hash(data.password, 10);
 
         let newUser: IUser;
@@ -318,6 +325,9 @@ export class UserService {
     async loginUser(data: LoginUserDto, context: RequestContext = {}) {
         const existingUser = await userRepository.getUserByEmail(data.email);
         if (!existingUser || !existingUser.password) {
+            // Compare against a fixed dummy hash even though there's no real user,
+            // so this path takes about as long as a real "wrong password" check —
+            // without it, unknown accounts responded noticeably faster than real ones.
             await bcryptjs.compare(data.password, DUMMY_PASSWORD_HASH);
             await activityLogService.record({
                 ...context,
@@ -331,6 +341,10 @@ export class UserService {
 
         const userId = existingUser._id.toString();
 
+        // Account lockout: once MAX_FAILED_LOGIN_ATTEMPTS is hit, the account is
+        // temporarily locked regardless of whether the next password is correct,
+        // capping how many passwords a brute-force attacker can try even if they
+        // get past rate limiting (e.g. by rotating IPs).
         if (existingUser.lockUntil && existingUser.lockUntil.getTime() > Date.now()) {
             await activityLogService.record({
                 ...context,

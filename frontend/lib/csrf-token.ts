@@ -35,6 +35,10 @@ const sign = async (nonce: string): Promise<string> => {
     return toHex(signature);
 };
 
+// Constant-time comparison: a normal `===` returns as soon as it finds a
+// mismatched character, so comparison time leaks how many leading characters
+// were correct. XOR-ing every character regardless of an early mismatch keeps
+// the comparison time the same either way, closing that timing side channel.
 export const timingSafeEqual = (a: string, b: string): boolean => {
     if (a.length !== b.length) return false;
     let mismatch = 0;
@@ -44,6 +48,10 @@ export const timingSafeEqual = (a: string, b: string): boolean => {
     return mismatch === 0;
 };
 
+// Token is a random nonce PLUS an HMAC signature over it, not just a random
+// value, so a token can be verified as genuinely server-issued (via
+// verifyCsrfToken) even without a database lookup, and can't be forged
+// without knowing CSRF_SECRET.
 export const generateCsrfToken = async (): Promise<string> => {
     const nonceBytes = new Uint8Array(32);
     crypto.getRandomValues(nonceBytes);

@@ -14,6 +14,9 @@ const byClientIp = (req: Request) => {
     return ip ? ipKeyGenerator(ip) : "unknown";
 };
 
+// Rate limiting by email (rather than just IP) stops an attacker from
+// distributing a brute-force attack on ONE account across many IPs/proxies
+// to dodge a per-IP limit; falls back to IP if no email is present.
 const byEmail = (req: Request) => {
     const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
     if (email) return email;
@@ -38,6 +41,9 @@ export const globalLimiter = rateLimit({
     keyGenerator: byClientIp,
 });
 
+// Brute-force protection on login: caps attempts per email within the window
+// (successful logins don't count against the limit, so this only throttles
+// repeated failures, not normal usage).
 export const loginLimiter = rateLimit({
     ...baseOptions,
     windowMs: 15 * 60 * 1000,
